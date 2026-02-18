@@ -1,8 +1,9 @@
 @import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+/* map safety: ensure the map container can take full height */
+html, body, #root { height: 100%; margin: 0; }
+
+/* @custom-variant dark (&:is(.dark *));
 
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -187,4 +188,4 @@ button:focus-visible {
   body {
     @apply bg-background text-foreground;
   }
-}
+} */
