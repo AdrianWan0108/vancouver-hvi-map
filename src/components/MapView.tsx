@@ -69,8 +69,12 @@ export default function MapView() {
     maplibregl.addProtocol("pmtiles", protocol.tile);
 
     // PMTiles served from Vite public/
-    const DA_PMTILES_URL = `${window.location.origin}/tiles/hvi_da.pmtiles`;
-    const REGIONS_PMTILES_URL = `${window.location.origin}/tiles/hvi_regions.pmtiles`;
+    // const DA_PMTILES_URL = `${window.location.origin}/tiles/hvi_da.pmtiles`;
+    // const REGIONS_PMTILES_URL = `${window.location.origin}/tiles/hvi_regions.pmtiles`;
+
+    const base = import.meta.env.BASE_URL;
+    const DA_PMTILES_URL = `${base}tiles/hvi_da.pmtiles`;
+    const REGIONS_PMTILES_URL = `${base}tiles/hvi_regions.pmtiles`;
 
     const daPmtiles = new PMTiles(DA_PMTILES_URL);
     const regionsPmtiles = new PMTiles(REGIONS_PMTILES_URL);
@@ -391,8 +395,8 @@ export default function MapView() {
   const panelTitle = lockedDguid
     ? `Locked DA: ${lockedDguid}`
     : activeDa?.DGUID
-    ? `Hovering DA: ${String(activeDa.DGUID)}`
-    : "DA Details";
+      ? `Hovering DA: ${String(activeDa.DGUID)}`
+      : "DA Details";
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100vh" }}>
