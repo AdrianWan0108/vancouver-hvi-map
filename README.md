@@ -1,73 +1,82 @@
-# React + TypeScript + Vite
+# Vancouver HVI Map
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + TypeScript + Vite web map for exploring Vancouver Heat Vulnerability Index (HVI) data from local PMTiles vector tiles.
 
-Currently, two official plugins are available:
+## What This App Does
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Displays a **regional choropleth** at lower zoom.
+- Automatically switches to **DA-level choropleth** at higher zoom.
+- Keeps a **left data panel** always visible.
+- Supports DA **hover details** and **click-to-lock** behavior.
+- Lets users select DA visualization layers from a dropdown.
+- Provides a DA filter menu with min/max range filtering (AND logic across enabled filters).
 
-## React Compiler
+## Data Inputs
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The app reads two PMTiles files from `public/tiles/`:
 
-## Expanding the ESLint configuration
+- `hvi_da.pmtiles`
+- `hvi_regions.pmtiles`
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Expected source-layer names:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- DA: `hvi_da`
+- Region: `hvi_regions`
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Project Structure
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```txt
+src/
+  features/
+    hvi-map/
+      config/
+      map/
+      state/
+      types/
+      utils/
+      components/
+  components/
+    MapView.tsx
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+`src/components/MapView.tsx` is now a thin wrapper that renders the feature module entrypoint.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Development
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev
 ```
+
+## Lint
+
+```bash
+npm run lint
+```
+
+## Tests
+
+```bash
+npm run test
+```
+
+## Build
+
+```bash
+npm run build
+```
+
+## Deploy
+
+This project is configured for GitHub Pages:
+
+```bash
+npm run deploy
+```
+
+Vite `base` is set to `/vancouver-hvi-map/`.
+
+## Notes
+
+- Region color is fixed to `region_hvi_n01`.
+- DA layer selection and DA filters apply in DA mode.
+- If a locked DA is filtered out, the panel keeps the lock and shows a warning.
