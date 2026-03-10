@@ -39,7 +39,7 @@ export default function LeftPanel() {
 
   return (
     <aside className="absolute left-4 top-4 z-10 w-[min(24rem,calc(100vw-2rem))]">
-      <Card className="max-h-[calc(100vh-2rem)] overflow-hidden border-border/80 bg-card/95 shadow-lg backdrop-blur-sm">
+      <Card className="h-[calc(100vh-2rem)] overflow-hidden border-border/80 bg-card/95 shadow-lg backdrop-blur-sm">
         <CardHeader className="gap-3 px-5 py-4">
           <div className="flex items-center gap-2">
             <Badge variant={panelMode === "locked" ? "default" : "secondary"}>
@@ -79,7 +79,7 @@ export default function LeftPanel() {
 
         <Separator />
 
-        <CardContent className="grid gap-4 overflow-auto px-5 py-4">
+        <CardContent className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto px-5 py-4">
           {state.mapError ? (
             <Alert variant="destructive">
               <AlertTitle>Map warning</AlertTitle>
@@ -88,10 +88,12 @@ export default function LeftPanel() {
           ) : null}
 
           {panelMode === "info" || !activeDa ? (
-            <InfoModeSection
-              zoomMode={state.zoomMode}
-              hasLockedDa={Boolean(state.lockedDa)}
-            />
+            <div className="flex min-h-0 flex-1">
+              <InfoModeSection
+                zoomMode={state.zoomMode}
+                hasLockedDa={Boolean(state.lockedDa)}
+              />
+            </div>
           ) : (
             <>
               <LayerSelect />

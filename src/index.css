@@ -104,3 +104,42 @@ body,
     font: inherit;
   }
 }
+
+.maplibregl-popup.map-tooltip-popup .maplibregl-popup-content {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
+.maplibregl-popup.map-tooltip-popup .maplibregl-popup-tip {
+  border-top-color: var(--popover);
+}
+
+.map-tooltip {
+  min-width: 8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--popover) 94%, transparent);
+  color: var(--popover-foreground);
+  box-shadow: 0 10px 30px rgb(15 23 42 / 0.16);
+  padding: 0.625rem 0.75rem;
+  backdrop-filter: blur(10px);
+}
+
+.map-tooltip__label {
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+  margin-bottom: 0.35rem;
+  text-transform: uppercase;
+}
+
+.map-tooltip__value {
+  color: var(--popover-foreground);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
