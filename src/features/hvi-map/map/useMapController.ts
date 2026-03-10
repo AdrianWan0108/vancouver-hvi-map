@@ -2,7 +2,7 @@ import { useEffect, useRef, type RefObject } from "react";
 import maplibregl, { Map } from "maplibre-gl";
 import type { MapGeoJSONFeature, MapLayerMouseEvent, MapMouseEvent } from "maplibre-gl";
 import { PMTiles, Protocol } from "pmtiles";
-import { DA_METRICS_BY_ID } from "../config/daMetrics";
+import { DA_METRICS_BY_ID, DEFAULT_DA_METRIC_ID } from "../config/daMetrics";
 import {
   REGION_SCORE_PROPERTY,
   VANCOUVER_CENTER,
@@ -51,20 +51,23 @@ function toRegionFeatureProperties(
   return feature.properties as RegionFeatureProperties;
 }
 
-function buildPopupContent(title: string, label: string, value: string): HTMLElement {
+function getTooltipMetricLabel(metricId: string, label: string): string {
+  return metricId === DEFAULT_DA_METRIC_ID ? "HVI" : label;
+}
+
+function buildPopupContent(label: string, value: string): HTMLElement {
   const wrapper = document.createElement("div");
-  wrapper.style.fontSize = "12px";
-  wrapper.style.lineHeight = "1.2";
+  wrapper.className = "map-tooltip";
 
-  const titleEl = document.createElement("div");
-  titleEl.style.fontWeight = "600";
-  titleEl.style.marginBottom = "4px";
-  titleEl.textContent = title;
-  wrapper.appendChild(titleEl);
+  const labelEl = document.createElement("div");
+  labelEl.className = "map-tooltip__label";
+  labelEl.textContent = label;
+  wrapper.appendChild(labelEl);
 
-  const row = document.createElement("div");
-  row.textContent = `${label}: ${value}`;
-  wrapper.appendChild(row);
+  const valueEl = document.createElement("div");
+  valueEl.className = "map-tooltip__value";
+  valueEl.textContent = value;
+  wrapper.appendChild(valueEl);
 
   return wrapper;
 }
@@ -106,6 +109,7 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
     );
 
     const tooltip = new maplibregl.Popup({
+      className: "map-tooltip-popup",
       closeButton: false,
       closeOnClick: false,
       offset: 10,
@@ -283,16 +287,11 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
         }
 
         const properties = toRegionFeatureProperties(feature);
-        const regionName = String(
-          properties?.ShortName ?? properties?.FullName ?? "Region"
-        );
         const score = formatScore(properties?.[REGION_SCORE_PROPERTY]);
 
         tooltip
           .setLngLat(event.lngLat)
-          .setDOMContent(
-            buildPopupContent(regionName, "Composite HVI", score)
-          )
+          .setDOMContent(buildPopupContent("Composite HVI", score))
           .addTo(map);
 
         map.getCanvas().style.cursor = "pointer";
@@ -328,11 +327,12 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
         if (!da) return;
 
         const metric = DA_METRICS_BY_ID[stateRef.current.selectedMetric];
+        const tooltipLabel = getTooltipMetricLabel(metric.id, metric.label);
         const tooltipValue = formatMetricValue(metric, da[metric.propertyKey]);
 
         tooltip
           .setLngLat(event.lngLat)
-          .setDOMContent(buildPopupContent(`DA ${da.DGUID}`, metric.label, tooltipValue))
+          .setDOMContent(buildPopupContent(tooltipLabel, tooltipValue))
           .addTo(map);
 
         map.getCanvas().style.cursor = "pointer";

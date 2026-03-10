@@ -1,3 +1,15 @@
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import FilterMenu from "./FilterMenu";
 import LayerSelect from "./LayerSelect";
 import InfoModeSection from "./InfoModeSection";
@@ -26,88 +38,79 @@ export default function LeftPanel() {
   const panelTitle = getPanelTitle(panelMode, activeDa?.DGUID ?? null);
 
   return (
-    <aside
-      style={{
-        position: "absolute",
-        top: 16,
-        left: 16,
-        width: 340,
-        maxHeight: "calc(100vh - 32px)",
-        overflow: "auto",
-        background: "white",
-        border: "1px solid rgba(0,0,0,0.12)",
-        borderRadius: 12,
-        padding: 12,
-        boxShadow: "0 6px 24px rgba(0,0,0,0.12)",
-        fontFamily: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial',
-        fontSize: 13,
-        lineHeight: 1.35,
-        zIndex: 10,
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-        <div style={{ fontWeight: 700 }}>{panelTitle}</div>
-        {panelMode === "locked" ? (
-          <button
-            type="button"
-            onClick={() => dispatch({ type: "unlockDa" })}
-            style={{
-              fontSize: 12,
-              padding: "4px 8px",
-              borderRadius: 8,
-              border: "1px solid rgba(0,0,0,0.2)",
-              background: "white",
-              cursor: "pointer",
-            }}
-            title="Unlock panel"
-          >
-            Unlock
-          </button>
-        ) : null}
-      </div>
-
-      {state.mapError ? (
-        <div
-          style={{
-            marginTop: 8,
-            padding: 8,
-            borderRadius: 8,
-            border: "1px solid rgba(214, 58, 58, 0.4)",
-            background: "rgba(214, 58, 58, 0.08)",
-            color: "rgb(135, 31, 31)",
-          }}
-        >
-          <b>Map warning:</b> {state.mapError}
-        </div>
-      ) : null}
-
-      <hr style={{ margin: "12px 0", borderColor: "rgba(0,0,0,0.08)" }} />
-
-      {panelMode === "info" || !activeDa ? (
-        <InfoModeSection
-          zoomMode={state.zoomMode}
-          hasLockedDa={Boolean(state.lockedDa)}
-        />
-      ) : (
-        <div style={{ display: "grid", gap: 12 }}>
-          <LayerSelect />
-          <FilterMenu />
-          {lockedDaFilteredOut ? (
-            <div
-              style={{
-                border: "1px solid rgba(179, 88, 0, 0.28)",
-                background: "rgba(255, 187, 0, 0.12)",
-                borderRadius: 8,
-                padding: 8,
-                color: "rgb(95, 55, 0)",
-              }}
-            >
-              Locked DA is currently outside active filter range.
-            </div>
+    <aside className="absolute left-4 top-4 z-10 w-[min(24rem,calc(100vw-2rem))]">
+      <Card className="h-[calc(100vh-2rem)] overflow-hidden border-border/80 bg-card/95 shadow-lg backdrop-blur-sm">
+        <CardHeader className="gap-3 px-5 py-4">
+          <div className="flex items-center gap-2">
+            <Badge variant={panelMode === "locked" ? "default" : "secondary"}>
+              {panelMode === "locked"
+                ? "Locked"
+                : panelMode === "hover"
+                  ? "Hover"
+                  : state.zoomMode === "region"
+                    ? "Region"
+                    : "Info"}
+            </Badge>
+            {state.zoomMode === "da" ? (
+              <Badge variant="outline">DA Mode</Badge>
+            ) : (
+              <Badge variant="outline">Region Mode</Badge>
+            )}
+          </div>
+          <CardTitle className="text-base">{panelTitle}</CardTitle>
+          <CardDescription>
+            Heat vulnerability explorer for Vancouver dissemination areas and
+            regional summaries.
+          </CardDescription>
+          {panelMode === "locked" ? (
+            <CardAction>
+              <Button
+                type="button"
+                variant="outline"
+                size="xs"
+                onClick={() => dispatch({ type: "unlockDa" })}
+                title="Unlock panel"
+              >
+                Unlock
+              </Button>
+            </CardAction>
           ) : null}
-          <DaDetailsSection da={activeDa} selectedMetric={state.selectedMetric} />
-        </div>
-      )}
+        </CardHeader>
+
+        <Separator />
+
+        <CardContent className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto px-5 py-4">
+          {state.mapError ? (
+            <Alert variant="destructive">
+              <AlertTitle>Map warning</AlertTitle>
+              <AlertDescription>{state.mapError}</AlertDescription>
+            </Alert>
+          ) : null}
+
+          {panelMode === "info" || !activeDa ? (
+            <div className="flex min-h-0 flex-1">
+              <InfoModeSection
+                zoomMode={state.zoomMode}
+                hasLockedDa={Boolean(state.lockedDa)}
+              />
+            </div>
+          ) : (
+            <>
+              <LayerSelect />
+              <FilterMenu />
+              {lockedDaFilteredOut ? (
+                <Alert variant="warning">
+                  <AlertTitle>Filtered out</AlertTitle>
+                  <AlertDescription>
+                    Locked DA is currently outside active filter range.
+                  </AlertDescription>
+                </Alert>
+              ) : null}
+              <DaDetailsSection da={activeDa} selectedMetric={state.selectedMetric} />
+            </>
+          )}
+        </CardContent>
+      </Card>
     </aside>
   );
 }

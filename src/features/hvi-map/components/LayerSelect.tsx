@@ -1,3 +1,4 @@
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -12,8 +13,10 @@ export default function LayerSelect() {
   const { state, dispatch } = useMapState();
 
   return (
-    <div style={{ display: "grid", gap: 6 }}>
-      <label style={{ fontWeight: 600, fontSize: 12 }}>Layer</label>
+    <div className="grid gap-2">
+      <Label className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+        Layer
+      </Label>
       <Select
         value={state.selectedMetric}
         onValueChange={(value) => {
@@ -21,7 +24,7 @@ export default function LayerSelect() {
           dispatch({ type: "selectedMetricChanged", metricId: value });
         }}
       >
-        <SelectTrigger size="sm" style={{ width: "100%" }}>
+        <SelectTrigger size="sm" className="w-full bg-background">
           <SelectValue placeholder="Select a layer" />
         </SelectTrigger>
         <SelectContent>

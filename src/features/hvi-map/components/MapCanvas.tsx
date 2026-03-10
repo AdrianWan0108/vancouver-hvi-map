@@ -5,5 +5,5 @@ export default function MapCanvas() {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   useMapController(mapContainerRef);
 
-  return <div ref={mapContainerRef} style={{ width: "100%", height: "100%" }} />;
+  return <div ref={mapContainerRef} className="h-full w-full" />;
 }
