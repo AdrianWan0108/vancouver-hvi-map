@@ -11,17 +11,17 @@ export default function InfoModeSection({
 }: InfoModeSectionProps) {
   if (zoomMode === "region") {
     return (
-      <div style={{ color: "rgba(0,0,0,0.72)" }}>
+      <p className="text-sm leading-6 text-muted-foreground">
         {hasLockedDa
           ? "Regional view is active. Zoom in to DA level to resume the locked DA panel."
           : "Regional view is active. Zoom in to DA level to inspect DA details."}
-      </div>
+      </p>
     );
   }
 
   return (
-    <div style={{ color: "rgba(0,0,0,0.72)" }}>
+    <p className="text-sm leading-6 text-muted-foreground">
       Hover a DA to see details. Click a DA to lock the panel.
-    </div>
+    </p>
   );
 }

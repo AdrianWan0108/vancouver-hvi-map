@@ -5,7 +5,7 @@ import MapCanvas from "./MapCanvas";
 export default function HviMapPage() {
   return (
     <MapStateProvider>
-      <div style={{ position: "relative", width: "100%", height: "100vh" }}>
+      <div className="relative h-screen w-full">
         <MapCanvas />
         <LeftPanel />
       </div>
