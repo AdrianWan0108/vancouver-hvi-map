@@ -55,9 +55,34 @@ function getTooltipMetricLabel(metricId: string, label: string): string {
   return metricId === DEFAULT_DA_METRIC_ID ? "HVI" : label;
 }
 
-function buildPopupContent(label: string, value: string): HTMLElement {
+function getRegionTooltipTitle(
+  properties: RegionFeatureProperties | null
+): string | undefined {
+  const name = properties?.FullName ?? properties?.ShortName;
+  if (typeof name !== "string") return undefined;
+
+  const trimmedName = name.trim();
+  return trimmedName || undefined;
+}
+
+function buildPopupContent({
+  title,
+  label,
+  value,
+}: {
+  title?: string;
+  label: string;
+  value: string;
+}): HTMLElement {
   const wrapper = document.createElement("div");
   wrapper.className = "map-tooltip";
+
+  if (title) {
+    const titleEl = document.createElement("div");
+    titleEl.className = "map-tooltip__title";
+    titleEl.textContent = title;
+    wrapper.appendChild(titleEl);
+  }
 
   const labelEl = document.createElement("div");
   labelEl.className = "map-tooltip__label";
@@ -287,11 +312,18 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
         }
 
         const properties = toRegionFeatureProperties(feature);
+        const regionName = getRegionTooltipTitle(properties);
         const score = formatScore(properties?.[REGION_SCORE_PROPERTY]);
 
         tooltip
           .setLngLat(event.lngLat)
-          .setDOMContent(buildPopupContent("Composite HVI", score))
+          .setDOMContent(
+            buildPopupContent({
+              title: regionName,
+              label: "Composite HVI",
+              value: score,
+            })
+          )
           .addTo(map);
 
         map.getCanvas().style.cursor = "pointer";
@@ -332,7 +364,12 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
 
         tooltip
           .setLngLat(event.lngLat)
-          .setDOMContent(buildPopupContent(tooltipLabel, tooltipValue))
+          .setDOMContent(
+            buildPopupContent({
+              label: tooltipLabel,
+              value: tooltipValue,
+            })
+          )
           .addTo(map);
 
         map.getCanvas().style.cursor = "pointer";
