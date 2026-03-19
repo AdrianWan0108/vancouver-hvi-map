@@ -1,50 +1,80 @@
-import type { DaMetricConfig, DaMetricId, DaMetricPaletteId } from "../config/daMetrics";
-import type { DaFiltersState } from "../types/state";
 import type { ExpressionSpecification } from "@maplibre/maplibre-gl-style-spec";
+import type { DaMetricConfig, DaMetricId, MetricPaletteId } from "../config/daMetrics";
+import { getPaletteStops } from "../config/palettes";
+import type { DaFiltersState } from "../types/state";
 
 export type MapExpression = boolean | ExpressionSpecification;
 
-function buildPaletteExpression(
+type FillMetricConfig = {
+  propertyKey: string;
+  domainMin: number;
+  domainMax: number;
+  paletteId: MetricPaletteId;
+};
+
+type VisibilityMetricConfig = {
+  propertyKey: string;
+  noDataPolicy: DaMetricConfig["noDataPolicy"];
+};
+
+function buildClampedValueExpression(
   propertyKey: string,
-  paletteId: DaMetricPaletteId
+  domainMin: number,
+  domainMax: number
 ): ExpressionSpecification {
-  if (paletteId === "orange-green") {
-    return [
-      "interpolate",
-      ["linear"],
-      ["coalesce", ["to-number", ["get", propertyKey]], 0],
-      0,
-      "#fdae61",
-      0.5,
-      "#fee08b",
-      1,
-      "#1a9850",
-    ] as ExpressionSpecification;
-  }
+  return [
+    "max",
+    domainMin,
+    [
+      "min",
+      domainMax,
+      ["coalesce", ["to-number", ["get", propertyKey]], domainMin],
+    ],
+  ] as ExpressionSpecification;
+}
+
+function buildPaletteExpression({
+  propertyKey,
+  domainMin,
+  domainMax,
+  paletteId,
+}: FillMetricConfig): ExpressionSpecification {
+  const midpoint = domainMin + (domainMax - domainMin) / 2;
+  const [lowColor, midColor, highColor] = getPaletteStops(paletteId);
 
   return [
     "interpolate",
     ["linear"],
-    ["coalesce", ["to-number", ["get", propertyKey]], 0],
-    0,
-    "#fdae61",
-    0.5,
-    "#fee08b",
-    1,
-    "#1a9850",
+    buildClampedValueExpression(propertyKey, domainMin, domainMax),
+    domainMin,
+    lowColor,
+    midpoint,
+    midColor,
+    domainMax,
+    highColor,
   ] as ExpressionSpecification;
 }
 
 export function buildFillColorExpression(
-  metric: { propertyKey: string; paletteId: DaMetricPaletteId }
+  metric: FillMetricConfig
 ): ExpressionSpecification {
-  return buildPaletteExpression(metric.propertyKey, metric.paletteId);
+  return buildPaletteExpression(metric);
 }
 
-type FilterMetricLookup = Record<
-  DaMetricId,
-  Pick<DaMetricConfig, "propertyKey" | "noDataPolicy">
->;
+export function buildRegionVisibilityFilterExpression(
+  showPeripheralAreas: boolean,
+  populationThreshold: number
+): MapExpression {
+  if (showPeripheralAreas) return true;
+
+  return [
+    "all",
+    ["has", "region_pop_total"],
+    [">=", ["to-number", ["get", "region_pop_total"]], populationThreshold],
+  ] as ExpressionSpecification;
+}
+
+type FilterMetricLookup = Record<DaMetricId, Pick<DaMetricConfig, "propertyKey">>;
 
 export function buildFilterExpression(
   filters: DaFiltersState,
@@ -81,12 +111,32 @@ export function buildFilterExpression(
   return ["all", ...clauses] as ExpressionSpecification;
 }
 
+function buildMetricVisibilityExpression(
+  metric: VisibilityMetricConfig,
+  filterExpression: MapExpression
+): MapExpression {
+  const clauses: unknown[] = [];
+
+  if (metric.noDataPolicy === "transparent") {
+    clauses.push(["has", metric.propertyKey]);
+  }
+
+  if (filterExpression !== true) {
+    clauses.push(filterExpression);
+  }
+
+  if (clauses.length === 0) return true;
+  if (clauses.length === 1) return clauses[0] as ExpressionSpecification;
+  return ["all", ...clauses] as ExpressionSpecification;
+}
+
 export function buildDaFillOpacityExpression(
+  metric: VisibilityMetricConfig,
   filterExpression: MapExpression
 ): ExpressionSpecification {
   return [
     "case",
-    filterExpression,
+    buildMetricVisibilityExpression(metric, filterExpression),
     ["case", ["boolean", ["feature-state", "hover"], false], 0.92, 0.75],
     0,
   ] as ExpressionSpecification;

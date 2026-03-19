@@ -1,4 +1,4 @@
-import type { DaMetricConfig } from "../config/daMetrics";
+import type { DaMetricConfig, DaMetricFormatId } from "../config/daMetrics";
 
 export function toNumber(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) return value;
@@ -38,8 +38,11 @@ export function formatPercent1(value: unknown): string {
   return `${numeric.toFixed(1)}%`;
 }
 
-export function formatMetricValue(metric: DaMetricConfig, value: unknown): string {
-  switch (metric.format) {
+export function formatValueByFormat(
+  format: DaMetricFormatId,
+  value: unknown
+): string {
+  switch (format) {
     case "score3":
       return formatScore(value);
     case "integer":
@@ -51,6 +54,10 @@ export function formatMetricValue(metric: DaMetricConfig, value: unknown): strin
     default:
       return toText(value);
   }
+}
+
+export function formatMetricValue(metric: Pick<DaMetricConfig, "format">, value: unknown): string {
+  return formatValueByFormat(metric.format, value);
 }
 
 export function parseNumericInput(raw: string): number | null {

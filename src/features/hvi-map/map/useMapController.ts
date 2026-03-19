@@ -4,7 +4,8 @@ import type { MapGeoJSONFeature, MapLayerMouseEvent, MapMouseEvent } from "mapli
 import { PMTiles, Protocol } from "pmtiles";
 import { DA_METRICS_BY_ID, DEFAULT_DA_METRIC_ID } from "../config/daMetrics";
 import {
-  REGION_SCORE_PROPERTY,
+  PERIPHERAL_REGION_POPULATION_THRESHOLD,
+  REGION_HVI_METRIC,
   VANCOUVER_CENTER,
   ZOOM_DA,
 } from "../config/regionConfig";
@@ -14,11 +15,13 @@ import type {
   RegionFeatureProperties,
 } from "../types/data";
 import { formatMetricValue, formatScore } from "../utils/format";
+import { getRegionDisplayName } from "../utils/region";
 import {
   buildDaFillOpacityExpression,
   buildFillColorExpression,
   buildFilterExpression,
   buildLineWidthExpression,
+  buildRegionVisibilityFilterExpression,
 } from "./expressions";
 import { MAP_LAYERS, MAP_SOURCES, SOURCE_LAYERS } from "./layers";
 import { getPmtilesUrls } from "./sources";
@@ -53,16 +56,6 @@ function toRegionFeatureProperties(
 
 function getTooltipMetricLabel(metricId: string, label: string): string {
   return metricId === DEFAULT_DA_METRIC_ID ? "HVI" : label;
-}
-
-function getRegionTooltipTitle(
-  properties: RegionFeatureProperties | null
-): string | undefined {
-  const name = properties?.FullName ?? properties?.ShortName;
-  if (typeof name !== "string") return undefined;
-
-  const trimmedName = name.trim();
-  return trimmedName || undefined;
 }
 
 function buildPopupContent({
@@ -102,6 +95,8 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
 
   const mapRef = useRef<Map | null>(null);
   const tooltipRef = useRef<maplibregl.Popup | null>(null);
+  const hoveredRegionIdRef = useRef<FeatureId | undefined>(undefined);
+  const hoveredDaIdRef = useRef<FeatureId | undefined>(undefined);
   const stateRef = useRef(state);
 
   useEffect(() => {
@@ -143,40 +138,37 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
     mapRef.current = map;
     tooltipRef.current = tooltip;
 
-    let hoveredRegionId: FeatureId | undefined;
-    let hoveredDaId: FeatureId | undefined;
-
     const hideTooltip = () => {
       tooltip.remove();
       map.getCanvas().style.cursor = "";
     };
 
     const clearRegionHover = () => {
-      if (hoveredRegionId === undefined) return;
+      if (hoveredRegionIdRef.current === undefined) return;
       if (!map.getSource(MAP_SOURCES.regions)) return;
       map.setFeatureState(
         {
           source: MAP_SOURCES.regions,
           sourceLayer: SOURCE_LAYERS.regions,
-          id: hoveredRegionId,
+          id: hoveredRegionIdRef.current,
         },
         { hover: false }
       );
-      hoveredRegionId = undefined;
+      hoveredRegionIdRef.current = undefined;
     };
 
     const clearDaHover = () => {
-      if (hoveredDaId === undefined) return;
+      if (hoveredDaIdRef.current === undefined) return;
       if (!map.getSource(MAP_SOURCES.da)) return;
       map.setFeatureState(
         {
           source: MAP_SOURCES.da,
           sourceLayer: SOURCE_LAYERS.da,
-          id: hoveredDaId,
+          id: hoveredDaIdRef.current,
         },
         { hover: false }
       );
-      hoveredDaId = undefined;
+      hoveredDaIdRef.current = undefined;
     };
 
     const updateZoomMode = () => {
@@ -206,10 +198,11 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
           stateRef.current.filters,
           DA_METRICS_BY_ID
         );
-        const regionFillColor = buildFillColorExpression({
-          propertyKey: REGION_SCORE_PROPERTY,
-          paletteId: "orange-green",
-        });
+        const regionVisibilityFilter = buildRegionVisibilityFilterExpression(
+          stateRef.current.showPeripheralAreas,
+          PERIPHERAL_REGION_POPULATION_THRESHOLD
+        );
+        const regionFillColor = buildFillColorExpression(REGION_HVI_METRIC);
         const daFillColor = buildFillColorExpression(metric);
 
         map.addSource(MAP_SOURCES.da, {
@@ -229,6 +222,9 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
           source: MAP_SOURCES.regions,
           "source-layer": SOURCE_LAYERS.regions,
           maxzoom: ZOOM_DA,
+          ...(regionVisibilityFilter === true
+            ? {}
+            : { filter: regionVisibilityFilter }),
           paint: {
             "fill-color": regionFillColor,
             "fill-outline-color": regionFillColor,
@@ -247,6 +243,9 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
           source: MAP_SOURCES.regions,
           "source-layer": SOURCE_LAYERS.regions,
           maxzoom: ZOOM_DA,
+          ...(regionVisibilityFilter === true
+            ? {}
+            : { filter: regionVisibilityFilter }),
           paint: {
             "line-width": buildLineWidthExpression(2, 1),
             "line-opacity": 0.25,
@@ -262,7 +261,7 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
           paint: {
             "fill-color": daFillColor,
             "fill-outline-color": daFillColor,
-            "fill-opacity": buildDaFillOpacityExpression(daFilterExpression),
+            "fill-opacity": buildDaFillOpacityExpression(metric, daFilterExpression),
           },
         });
 
@@ -298,9 +297,9 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
         const featureId = getFeatureId(feature);
         if (featureId === undefined) return;
 
-        if (hoveredRegionId !== featureId) {
+        if (hoveredRegionIdRef.current !== featureId) {
           clearRegionHover();
-          hoveredRegionId = featureId;
+          hoveredRegionIdRef.current = featureId;
           map.setFeatureState(
             {
               source: MAP_SOURCES.regions,
@@ -312,15 +311,19 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
         }
 
         const properties = toRegionFeatureProperties(feature);
-        const regionName = getRegionTooltipTitle(properties);
-        const score = formatScore(properties?.[REGION_SCORE_PROPERTY]);
+        const regionName = getRegionDisplayName(properties) ?? undefined;
+        const score = formatScore(properties?.[REGION_HVI_METRIC.propertyKey]);
+
+        if (properties && !stateRef.current.lockedRegion) {
+          dispatch({ type: "hoveredRegionChanged", region: properties });
+        }
 
         tooltip
           .setLngLat(event.lngLat)
           .setDOMContent(
             buildPopupContent({
               title: regionName,
-              label: "Composite HVI",
+              label: REGION_HVI_METRIC.label,
               value: score,
             })
           )
@@ -332,6 +335,9 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
       map.on("mouseleave", MAP_LAYERS.regionsFill, () => {
         clearRegionHover();
         hideTooltip();
+        if (!stateRef.current.lockedRegion) {
+          dispatch({ type: "hoveredRegionChanged", region: null });
+        }
       });
 
       map.on("mousemove", MAP_LAYERS.daFill, (event: MapLayerMouseEvent) => {
@@ -342,9 +348,9 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
         const featureId = getFeatureId(feature);
         if (featureId === undefined) return;
 
-        if (hoveredDaId !== featureId) {
+        if (hoveredDaIdRef.current !== featureId) {
           clearDaHover();
-          hoveredDaId = featureId;
+          hoveredDaIdRef.current = featureId;
           map.setFeatureState(
             {
               source: MAP_SOURCES.da,
@@ -389,7 +395,23 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
 
       map.on("mousemove", (event: MapMouseEvent) => {
         const currentState = stateRef.current;
-        if (currentState.zoomMode !== "da" || currentState.lockedDa) return;
+        if (currentState.zoomMode === "region") {
+          if (currentState.lockedRegion) return;
+
+          const features = map.queryRenderedFeatures(event.point, {
+            layers: [MAP_LAYERS.regionsFill],
+          });
+
+          if (features.length === 0) {
+            clearRegionHover();
+            hideTooltip();
+            dispatch({ type: "hoveredRegionChanged", region: null });
+          }
+          return;
+        }
+
+        if (currentState.lockedDa) return;
+
         const features = map.queryRenderedFeatures(event.point, {
           layers: [MAP_LAYERS.daFill],
         });
@@ -398,6 +420,17 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
           hideTooltip();
           dispatch({ type: "hoveredDaChanged", da: null });
         }
+      });
+
+      map.on("click", MAP_LAYERS.regionsFill, (event: MapLayerMouseEvent) => {
+        if (stateRef.current.zoomMode !== "region") return;
+        const feature = event.features?.[0];
+        if (!feature) return;
+
+        const region = toRegionFeatureProperties(feature);
+        if (!region) return;
+
+        dispatch({ type: "regionClicked", region });
       });
 
       map.on("click", MAP_LAYERS.daFill, (event: MapLayerMouseEvent) => {
@@ -429,10 +462,47 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
     const metric = DA_METRICS_BY_ID[state.selectedMetric];
     const fillColor = buildFillColorExpression(metric);
     const filterExpression = buildFilterExpression(state.filters, DA_METRICS_BY_ID);
-    const fillOpacity = buildDaFillOpacityExpression(filterExpression);
+    const fillOpacity = buildDaFillOpacityExpression(metric, filterExpression);
 
     map.setPaintProperty(MAP_LAYERS.daFill, "fill-color", fillColor);
     map.setPaintProperty(MAP_LAYERS.daFill, "fill-outline-color", fillColor);
     map.setPaintProperty(MAP_LAYERS.daFill, "fill-opacity", fillOpacity);
   }, [state.filters, state.selectedMetric]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (!map.getLayer(MAP_LAYERS.regionsFill)) return;
+
+    const regionVisibilityFilter = buildRegionVisibilityFilterExpression(
+      state.showPeripheralAreas,
+      PERIPHERAL_REGION_POPULATION_THRESHOLD
+    );
+    const nextFilter =
+      regionVisibilityFilter === true ? null : regionVisibilityFilter;
+
+    map.setFilter(MAP_LAYERS.regionsFill, nextFilter);
+    map.setFilter(MAP_LAYERS.regionsLine, nextFilter);
+
+    if (
+      !state.showPeripheralAreas &&
+      state.zoomMode === "region" &&
+      !state.lockedRegion &&
+      hoveredRegionIdRef.current !== undefined &&
+      map.getSource(MAP_SOURCES.regions)
+    ) {
+      map.setFeatureState(
+        {
+          source: MAP_SOURCES.regions,
+          sourceLayer: SOURCE_LAYERS.regions,
+          id: hoveredRegionIdRef.current,
+        },
+        { hover: false }
+      );
+      hoveredRegionIdRef.current = undefined;
+      tooltipRef.current?.remove();
+      map.getCanvas().style.cursor = "";
+      dispatch({ type: "hoveredRegionChanged", region: null });
+    }
+  }, [dispatch, state.lockedRegion, state.showPeripheralAreas, state.zoomMode]);
 }

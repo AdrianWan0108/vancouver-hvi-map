@@ -87,11 +87,7 @@ export default function FilterMenu() {
                           type="number"
                           step="any"
                           value={range.min ?? ""}
-                          placeholder={
-                            metric.defaultMin !== null
-                              ? String(metric.defaultMin)
-                              : "Min"
-                          }
+                          placeholder={String(metric.domainMin)}
                           onChange={(event) => {
                             dispatch({
                               type: "filterRangeChanged",
@@ -114,11 +110,7 @@ export default function FilterMenu() {
                           type="number"
                           step="any"
                           value={range.max ?? ""}
-                          placeholder={
-                            metric.defaultMax !== null
-                              ? String(metric.defaultMax)
-                              : "Max"
-                          }
+                          placeholder={String(metric.domainMax)}
                           onChange={(event) => {
                             dispatch({
                               type: "filterRangeChanged",

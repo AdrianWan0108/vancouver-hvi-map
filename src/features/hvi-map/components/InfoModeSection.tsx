@@ -3,22 +3,26 @@ import type { ZoomMode } from "../types/data";
 interface InfoModeSectionProps {
   zoomMode: ZoomMode;
   hasLockedDa: boolean;
+  hasLockedRegion: boolean;
 }
 
 export default function InfoModeSection({
   zoomMode,
   hasLockedDa,
+  hasLockedRegion,
 }: InfoModeSectionProps) {
   const message =
     zoomMode === "region"
-      ? hasLockedDa
-        ? "Regional view is active. Zoom in to DA level to resume the locked DA panel."
-        : "Regional view is active. Zoom in to DA level to inspect DA details."
+      ? hasLockedRegion
+        ? "Regional view is active. Unlock the current region or zoom in to inspect dissemination areas."
+        : "Hover a region to preview its summary. Click a region to lock it, or zoom in to inspect dissemination areas."
       : "Hover a DA to see details. Click a DA to lock the panel.";
 
   const hint =
     zoomMode === "region"
-      ? "The panel height stays pinned so the map layout does not jump while you change zoom levels."
+      ? hasLockedDa
+        ? "A DA can stay locked in the background while you check regional summaries and then resume it by zooming back in."
+        : "Use the view options to hide low-population peripheral regions without removing them from the data."
       : "Locking a DA keeps its metrics visible while you continue exploring the map.";
 
   if (zoomMode === "region") {

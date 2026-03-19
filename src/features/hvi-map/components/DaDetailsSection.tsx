@@ -1,15 +1,15 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { DA_METRICS_BY_ID, type DaMetricId } from "../config/daMetrics";
 import type { DaFeatureProperties } from "../types/data";
 import {
-  formatInteger,
-  formatMetricValue,
-  formatPercent1,
-  formatScore,
-} from "../utils/format";
+  getDaDetailsGroups,
+  getDefaultDaDetailsExpandedState,
+} from "./daDetailsGroups";
+import { formatMetricValue } from "../utils/format";
 
 interface DaDetailsSectionProps {
   da: DaFeatureProperties;
@@ -19,19 +19,34 @@ interface DaDetailsSectionProps {
 function Section({
   title,
   children,
+  collapsible = false,
+  isExpanded = true,
+  onToggle,
 }: {
   title: string;
   children: ReactNode;
+  collapsible?: boolean;
+  isExpanded?: boolean;
+  onToggle?: () => void;
 }) {
   return (
     <Card className="gap-0 overflow-hidden border-border/80 bg-background/90 shadow-none">
-      <CardHeader className="px-4 py-3">
+      <CardHeader className="flex flex-row items-center justify-between gap-3 px-4 py-3">
         <CardTitle className="text-sm">{title}</CardTitle>
+        {collapsible ? (
+          <Button type="button" variant="outline" size="xs" onClick={onToggle}>
+            {isExpanded ? "Hide" : "Show"}
+          </Button>
+        ) : null}
       </CardHeader>
-      <Separator />
-      <CardContent className="grid gap-2 px-4 py-3 text-sm">
-        {children}
-      </CardContent>
+      {isExpanded ? (
+        <>
+          <Separator />
+          <CardContent className="grid gap-2 px-4 py-3 text-sm">
+            {children}
+          </CardContent>
+        </>
+      ) : null}
     </Card>
   );
 }
@@ -50,6 +65,10 @@ export default function DaDetailsSection({
   selectedMetric,
 }: DaDetailsSectionProps) {
   const primaryMetric = DA_METRICS_BY_ID[selectedMetric];
+  const detailGroups = getDaDetailsGroups(da);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
+    () => getDefaultDaDetailsExpandedState()
+  );
 
   return (
     <div className="grid gap-3">
@@ -67,50 +86,24 @@ export default function DaDetailsSection({
         />
       </Section>
 
-      <Section title="HVI">
-        <ValueRow label="HVI (0-1)" value={formatScore(da.hvi_index_n01)} />
-        <ValueRow label="Sensitivity" value={formatScore(da.sensitivity_index)} />
-        <ValueRow
-          label="Adaptive Capacity"
-          value={formatScore(da.adaptive_capacity_index)}
-        />
-        <ValueRow label="Exposure Index" value={formatScore(da.exposure_index)} />
-      </Section>
-
-      <Section title="Key Stats">
-        <ValueRow label="Population" value={formatInteger(da.pop_total)} />
-        <ValueRow
-          label="Unemployment Rate"
-          value={formatPercent1(da.unemployment_rate)}
-        />
-        <ValueRow
-          label="Low Income Rate"
-          value={formatPercent1(da.low_income_rate)}
-        />
-        <ValueRow
-          label="% Seniors 65+"
-          value={formatPercent1(da.pct_seniors_65plus)}
-        />
-        <ValueRow
-          label="% Living Alone"
-          value={formatPercent1(da.pct_living_alone)}
-        />
-      </Section>
-
-      <Section title="Greenness">
-        <ValueRow label="Green Fraction" value={formatScore(da.green_frac)} />
-        <ValueRow label="Coniferous" value={formatScore(da.frac_coniferous)} />
-        <ValueRow label="Deciduous" value={formatScore(da.frac_deciduous)} />
-        <ValueRow label="Shrub" value={formatScore(da.frac_shrub)} />
-        <ValueRow
-          label="Modified Herb"
-          value={formatScore(da.frac_modified_herb)}
-        />
-        <ValueRow
-          label="Natural Herb"
-          value={formatScore(da.frac_natural_herb)}
-        />
-      </Section>
+      {detailGroups.map((group) => (
+        <Section
+          key={group.title}
+          title={group.title}
+          collapsible={group.collapsible}
+          isExpanded={expandedGroups[group.title] ?? group.defaultExpanded}
+          onToggle={() =>
+            setExpandedGroups((current) => ({
+              ...current,
+              [group.title]: !(current[group.title] ?? group.defaultExpanded),
+            }))
+          }
+        >
+          {group.rows.map((row) => (
+            <ValueRow key={row.label} label={row.label} value={row.value} />
+          ))}
+        </Section>
+      ))}
     </div>
   );
 }
