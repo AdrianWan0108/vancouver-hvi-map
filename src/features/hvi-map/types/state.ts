@@ -16,7 +16,9 @@ export type DaFiltersState = Record<DaMetricId, DaFilterRange>;
 export interface MapUiState {
   zoomMode: ZoomMode;
   hoveredDa: DaFeatureProperties | null;
+  hoveredDaRegionName: string | null;
   lockedDa: DaFeatureProperties | null;
+  lockedDaRegionName: string | null;
   hoveredRegion: RegionFeatureProperties | null;
   lockedRegion: RegionFeatureProperties | null;
   selectedMetric: DaMetricId;
@@ -28,8 +30,12 @@ export interface MapUiState {
 
 export type MapAction =
   | { type: "zoomModeChanged"; zoomMode: ZoomMode }
-  | { type: "hoveredDaChanged"; da: DaFeatureProperties | null }
-  | { type: "daClicked"; da: DaFeatureProperties }
+  | {
+      type: "hoveredDaChanged";
+      da: DaFeatureProperties | null;
+      regionName?: string | null;
+    }
+  | { type: "daClicked"; da: DaFeatureProperties; regionName?: string | null }
   | { type: "unlockDa" }
   | { type: "hoveredRegionChanged"; region: RegionFeatureProperties | null }
   | { type: "regionClicked"; region: RegionFeatureProperties }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  getPanelHeaderContent,
   getPeripheralVisibilityDescription,
   isPeripheralVisibilityControlDisabled,
   shouldShowDaControls,
@@ -20,6 +21,32 @@ describe("panel content helpers", () => {
   it("keeps DA controls available whenever DA mode is active", () => {
     expect(shouldShowDaControls("da")).toBe(true);
     expect(shouldShowDaControls("region")).toBe(false);
+  });
+
+  it("builds compact panel headers for DA and region contexts", () => {
+    expect(
+      getPanelHeaderContent({
+        zoomMode: "da",
+        activeDaDguid: "2021S051259150657",
+        activeDaRegionName: "Vancouver",
+        activeRegionName: null,
+      })
+    ).toEqual({
+      title: "DA 2021S051259150657",
+      subtitle: "Vancouver",
+    });
+
+    expect(
+      getPanelHeaderContent({
+        zoomMode: "region",
+        activeDaDguid: null,
+        activeDaRegionName: null,
+        activeRegionName: "Burnaby",
+      })
+    ).toEqual({
+      title: "Burnaby",
+      subtitle: null,
+    });
   });
 
   it("surfaces final region summary fields without duplicating raw HVI", () => {

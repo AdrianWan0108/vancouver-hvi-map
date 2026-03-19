@@ -54,6 +54,17 @@ function toRegionFeatureProperties(
   return feature.properties as RegionFeatureProperties;
 }
 
+function getRegionNameAtPoint(
+  map: Map,
+  point: MapMouseEvent["point"]
+): string | null {
+  const features = map.queryRenderedFeatures(point, {
+    layers: [MAP_LAYERS.regionsLookup],
+  });
+  const region = toRegionFeatureProperties(features[0]);
+  return getRegionDisplayName(region);
+}
+
 function getTooltipMetricLabel(metricId: string, label: string): string {
   return metricId === DEFAULT_DA_METRIC_ID ? "HVI" : label;
 }
@@ -253,6 +264,18 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
         });
 
         map.addLayer({
+          id: MAP_LAYERS.regionsLookup,
+          type: "fill",
+          source: MAP_SOURCES.regions,
+          "source-layer": SOURCE_LAYERS.regions,
+          minzoom: ZOOM_DA,
+          paint: {
+            "fill-opacity": 0,
+            "fill-outline-color": "rgba(0,0,0,0)",
+          },
+        });
+
+        map.addLayer({
           id: MAP_LAYERS.daFill,
           type: "fill",
           source: MAP_SOURCES.da,
@@ -363,6 +386,7 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
 
         const da = toDaFeatureProperties(feature);
         if (!da) return;
+        const regionName = getRegionNameAtPoint(map, event.point);
 
         const metric = DA_METRICS_BY_ID[stateRef.current.selectedMetric];
         const tooltipLabel = getTooltipMetricLabel(metric.id, metric.label);
@@ -381,7 +405,7 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
         map.getCanvas().style.cursor = "pointer";
 
         if (!stateRef.current.lockedDa) {
-          dispatch({ type: "hoveredDaChanged", da });
+          dispatch({ type: "hoveredDaChanged", da, regionName });
         }
       });
 
@@ -389,7 +413,7 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
         clearDaHover();
         hideTooltip();
         if (!stateRef.current.lockedDa) {
-          dispatch({ type: "hoveredDaChanged", da: null });
+          dispatch({ type: "hoveredDaChanged", da: null, regionName: null });
         }
       });
 
@@ -418,7 +442,7 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
         if (features.length === 0) {
           clearDaHover();
           hideTooltip();
-          dispatch({ type: "hoveredDaChanged", da: null });
+          dispatch({ type: "hoveredDaChanged", da: null, regionName: null });
         }
       });
 
@@ -440,8 +464,9 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
 
         const da = toDaFeatureProperties(feature);
         if (!da) return;
+        const regionName = getRegionNameAtPoint(map, event.point);
 
-        dispatch({ type: "daClicked", da });
+        dispatch({ type: "daClicked", da, regionName });
       });
     });
 

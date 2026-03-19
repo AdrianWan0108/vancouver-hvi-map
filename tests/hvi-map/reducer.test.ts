@@ -35,15 +35,30 @@ describe("mapUiReducer", () => {
       zoomMode: "da",
     });
 
-    const lockedA = mapUiReducer(inDaMode, { type: "daClicked", da: daA });
+    const lockedA = mapUiReducer(inDaMode, {
+      type: "daClicked",
+      da: daA,
+      regionName: "Metro Core",
+    });
     expect(lockedA.lockedDa?.DGUID).toBe("A");
+    expect(lockedA.lockedDaRegionName).toBe("Metro Core");
 
-    const switchedToB = mapUiReducer(lockedA, { type: "daClicked", da: daB });
+    const switchedToB = mapUiReducer(lockedA, {
+      type: "daClicked",
+      da: daB,
+      regionName: "North Shore",
+    });
     expect(switchedToB.lockedDa?.DGUID).toBe("B");
+    expect(switchedToB.lockedDaRegionName).toBe("North Shore");
 
-    const unlocked = mapUiReducer(switchedToB, { type: "daClicked", da: daB });
+    const unlocked = mapUiReducer(switchedToB, {
+      type: "daClicked",
+      da: daB,
+      regionName: "North Shore",
+    });
     expect(unlocked.lockedDa).toBeNull();
     expect(unlocked.hoveredDa?.DGUID).toBe("B");
+    expect(unlocked.hoveredDaRegionName).toBe("North Shore");
   });
 
   it("clears hover but preserves lock when leaving DA mode", () => {
@@ -54,15 +69,25 @@ describe("mapUiReducer", () => {
       type: "zoomModeChanged",
       zoomMode: "da",
     });
-    const hovered = mapUiReducer(inDaMode, { type: "hoveredDaChanged", da: daA });
-    const locked = mapUiReducer(hovered, { type: "daClicked", da: daA });
+    const hovered = mapUiReducer(inDaMode, {
+      type: "hoveredDaChanged",
+      da: daA,
+      regionName: "Metro Core",
+    });
+    const locked = mapUiReducer(hovered, {
+      type: "daClicked",
+      da: daA,
+      regionName: "Metro Core",
+    });
     const backToRegion = mapUiReducer(locked, {
       type: "zoomModeChanged",
       zoomMode: "region",
     });
 
     expect(backToRegion.hoveredDa).toBeNull();
+    expect(backToRegion.hoveredDaRegionName).toBeNull();
     expect(backToRegion.lockedDa?.DGUID).toBe("A");
+    expect(backToRegion.lockedDaRegionName).toBe("Metro Core");
   });
 
   it("normalizes filter ranges and disables filter with empty bounds", () => {
@@ -132,16 +157,26 @@ describe("mapUiReducer", () => {
       type: "zoomModeChanged",
       zoomMode: "da",
     });
-    const hoveredDa = mapUiReducer(inDaMode, { type: "hoveredDaChanged", da });
-    const lockedDa = mapUiReducer(hoveredDa, { type: "daClicked", da });
+    const hoveredDa = mapUiReducer(inDaMode, {
+      type: "hoveredDaChanged",
+      da,
+      regionName: "Alpha",
+    });
+    const lockedDa = mapUiReducer(hoveredDa, {
+      type: "daClicked",
+      da,
+      regionName: "Alpha",
+    });
     const backToRegion = mapUiReducer(lockedDa, {
       type: "zoomModeChanged",
       zoomMode: "region",
     });
 
     expect(backToRegion.lockedDa?.DGUID).toBe("A");
+    expect(backToRegion.lockedDaRegionName).toBe("Alpha");
     expect(backToRegion.lockedRegion?.FullName).toBe("Alpha");
     expect(backToRegion.hoveredDa).toBeNull();
+    expect(backToRegion.hoveredDaRegionName).toBeNull();
     expect(backToRegion.hoveredRegion).toBeNull();
   });
 

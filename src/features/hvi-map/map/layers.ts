@@ -11,6 +11,7 @@ export const SOURCE_LAYERS = {
 export const MAP_LAYERS = {
   regionsFill: "regions-fill",
   regionsLine: "regions-line",
+  regionsLookup: "regions-lookup",
   daFill: "da-fill",
   daLine: "da-line",
 } as const;

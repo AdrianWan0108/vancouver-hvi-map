@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createInitialMapUiState, mapUiReducer } from "../../src/features/hvi-map/state/reducer";
 import {
   selectActiveDa,
+  selectActiveDaRegionName,
   selectActiveRegion,
   selectIsLockedDaFilteredOut,
   selectPanelMode,
@@ -31,12 +32,14 @@ describe("selectors", () => {
     const hovered = mapUiReducer(inDa, {
       type: "hoveredDaChanged",
       da: { DGUID: "A" },
+      regionName: "Metro Core",
     });
     expect(selectPanelMode(hovered)).toBe("hover");
 
     const locked = mapUiReducer(hovered, {
       type: "daClicked",
       da: { DGUID: "A" },
+      regionName: "Metro Core",
     });
     expect(selectPanelMode(locked)).toBe("locked");
   });
@@ -47,14 +50,17 @@ describe("selectors", () => {
     const hovered = mapUiReducer(inDa, {
       type: "hoveredDaChanged",
       da: { DGUID: "A" },
+      regionName: "Metro Core",
     });
     expect(selectActiveDa(hovered)?.DGUID).toBe("A");
+    expect(selectActiveDaRegionName(hovered)).toBe("Metro Core");
 
     const inRegion = mapUiReducer(hovered, {
       type: "zoomModeChanged",
       zoomMode: "region",
     });
     expect(selectActiveDa(inRegion)).toBeNull();
+    expect(selectActiveDaRegionName(inRegion)).toBeNull();
   });
 
   it("returns active region only in region zoom mode", () => {

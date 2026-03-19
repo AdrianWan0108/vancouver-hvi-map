@@ -47,7 +47,9 @@ export function createInitialMapUiState(): MapUiState {
   return {
     zoomMode: "region",
     hoveredDa: null,
+    hoveredDaRegionName: null,
     lockedDa: null,
+    lockedDaRegionName: null,
     hoveredRegion: null,
     lockedRegion: null,
     selectedMetric: DEFAULT_DA_METRIC_ID,
@@ -66,12 +68,17 @@ export function mapUiReducer(state: MapUiState, action: MapAction): MapUiState {
         ...state,
         zoomMode: action.zoomMode,
         hoveredDa: null,
+        hoveredDaRegionName: null,
         hoveredRegion: null,
       };
     }
     case "hoveredDaChanged": {
       if (state.lockedDa) return state;
-      return { ...state, hoveredDa: action.da };
+      return {
+        ...state,
+        hoveredDa: action.da,
+        hoveredDaRegionName: action.regionName ?? null,
+      };
     }
     case "daClicked": {
       const clickedId = action.da.DGUID;
@@ -81,17 +88,20 @@ export function mapUiReducer(state: MapUiState, action: MapAction): MapUiState {
         return {
           ...state,
           lockedDa: null,
+          lockedDaRegionName: null,
           hoveredDa: action.da,
+          hoveredDaRegionName: action.regionName ?? null,
         };
       }
 
       return {
         ...state,
         lockedDa: action.da,
+        lockedDaRegionName: action.regionName ?? null,
       };
     }
     case "unlockDa": {
-      return { ...state, lockedDa: null };
+      return { ...state, lockedDa: null, lockedDaRegionName: null };
     }
     case "hoveredRegionChanged": {
       if (state.lockedRegion) return state;

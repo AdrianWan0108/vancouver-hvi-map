@@ -49,6 +49,12 @@ export function selectActiveDa(state: MapUiState): DaFeatureProperties | null {
   return state.hoveredDa;
 }
 
+export function selectActiveDaRegionName(state: MapUiState): string | null {
+  if (state.zoomMode !== "da") return null;
+  if (state.lockedDa) return state.lockedDaRegionName;
+  return state.hoveredDaRegionName;
+}
+
 export function selectActiveRegion(
   state: MapUiState
 ): RegionFeatureProperties | null {
