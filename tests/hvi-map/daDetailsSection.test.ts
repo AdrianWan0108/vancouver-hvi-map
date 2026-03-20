@@ -19,6 +19,7 @@ describe("DA details groups", () => {
   it("matches the updated housing and built environment sections", () => {
     const da: DaFeatureProperties = {
       DGUID: "A",
+      DAUID: "A",
       hvi_index_n01: 0.5,
       sensitivity_index: 0.4,
       adaptive_capacity_index: 0.7,
@@ -66,6 +67,7 @@ describe("DA details groups", () => {
   it("formats updated metric values consistently", () => {
     const da: DaFeatureProperties = {
       DGUID: "B",
+      DAUID: "B",
       hvi_index_n01: 0.5123,
       sensitivity_index: 0.4321,
       adaptive_capacity_index: 0.6789,

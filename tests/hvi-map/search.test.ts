@@ -14,12 +14,16 @@ const entries: SearchEntry[] = [
   },
   {
     kind: "da",
-    key: "2021S051259151413",
-    label: "DA 2021S051259151413",
+    key: "59151413",
+    label: "DA 59151413",
     secondaryLabel: "City of Vancouver",
     bbox: [-123.11, 49.26, -123.1, 49.27],
     center: [-123.105, 49.265],
-    properties: { DGUID: "2021S051259151413", hvi_index_n01: 0.495 },
+    properties: {
+      DGUID: "2021S051259151413",
+      DAUID: "59151413",
+      hvi_index_n01: 0.495,
+    },
     regionName: "City of Vancouver",
   },
 ];
@@ -30,15 +34,15 @@ describe("search helpers", () => {
 
     expect(results.map((result) => `${result.kind}:${result.key}`)).toEqual([
       "region:10",
-      "da:2021S051259151413",
+      "da:59151413",
     ]);
   });
 
   it("prioritizes DA ID prefix matches", () => {
-    const results = getSearchResults(entries, "2021s0512");
+    const results = getSearchResults(entries, "5915");
 
     expect(results[0]?.kind).toBe("da");
-    expect(results[0]?.key).toBe("2021S051259151413");
+    expect(results[0]?.key).toBe("59151413");
   });
 
   it("requires at least two characters before returning results", () => {

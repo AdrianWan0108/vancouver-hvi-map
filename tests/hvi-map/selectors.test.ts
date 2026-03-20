@@ -31,14 +31,14 @@ describe("selectors", () => {
     });
     const hovered = mapUiReducer(inDa, {
       type: "hoveredDaChanged",
-      da: { DGUID: "A" },
+      da: { DGUID: "A", DAUID: "A" },
       regionName: "Metro Core",
     });
     expect(selectPanelMode(hovered)).toBe("hover");
 
     const locked = mapUiReducer(hovered, {
       type: "daClicked",
-      da: { DGUID: "A" },
+      da: { DGUID: "A", DAUID: "A" },
       regionName: "Metro Core",
     });
     expect(selectPanelMode(locked)).toBe("locked");
@@ -49,7 +49,7 @@ describe("selectors", () => {
     const inDa = mapUiReducer(initial, { type: "zoomModeChanged", zoomMode: "da" });
     const hovered = mapUiReducer(inDa, {
       type: "hoveredDaChanged",
-      da: { DGUID: "A" },
+      da: { DGUID: "A", DAUID: "A" },
       regionName: "Metro Core",
     });
     expect(selectActiveDa(hovered)?.DGUID).toBe("A");
@@ -83,7 +83,7 @@ describe("selectors", () => {
     const inDa = mapUiReducer(initial, { type: "zoomModeChanged", zoomMode: "da" });
     const locked = mapUiReducer(inDa, {
       type: "daClicked",
-      da: { DGUID: "A", hvi_index_n01: 0.2 },
+      da: { DGUID: "A", DAUID: "A", hvi_index_n01: 0.2 },
     });
     const filtered = mapUiReducer(locked, {
       type: "filterRangeChanged",

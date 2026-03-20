@@ -27,19 +27,19 @@ describe("panel content helpers", () => {
     expect(
       getPanelHeaderContent({
         zoomMode: "da",
-        activeDaDguid: "2021S051259150657",
+        activeDaDauid: "59150657",
         activeDaRegionName: "Vancouver",
         activeRegionName: null,
       })
     ).toEqual({
-      title: "DA 2021S051259150657",
+      title: "DA 59150657",
       subtitle: "Vancouver",
     });
 
     expect(
       getPanelHeaderContent({
         zoomMode: "region",
-        activeDaDguid: null,
+        activeDaDauid: null,
         activeDaRegionName: null,
         activeRegionName: "Burnaby",
       })

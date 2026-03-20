@@ -5,8 +5,8 @@ import type {
   RegionFeatureProperties,
 } from "../../src/features/hvi-map/types/data";
 
-function makeDa(dguid: string): DaFeatureProperties {
-  return { DGUID: dguid, hvi_index_n01: 0.5 };
+function makeDa(dguid: string, dauid = dguid): DaFeatureProperties {
+  return { DGUID: dguid, DAUID: dauid, hvi_index_n01: 0.5 };
 }
 
 function makeRegion(munNum: number, name = `Region ${munNum}`): RegionFeatureProperties {

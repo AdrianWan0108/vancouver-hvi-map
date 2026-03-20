@@ -6,6 +6,7 @@ export interface FeatureProperties {
 
 export interface DaFeatureProperties extends FeatureProperties {
   DGUID: string;
+  DAUID: string;
   adaptive_capacity_index?: number;
   exposure_index?: number;
   exposure_mean?: number;

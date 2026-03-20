@@ -33,7 +33,7 @@ export default function LeftPanel() {
   const activeRegionName = getRegionDisplayName(activeRegion);
   const headerContent = getPanelHeaderContent({
     zoomMode: state.zoomMode,
-    activeDaDguid: activeDa?.DGUID ?? null,
+    activeDaDauid: activeDa?.DAUID ?? null,
     activeDaRegionName,
     activeRegionName,
   });

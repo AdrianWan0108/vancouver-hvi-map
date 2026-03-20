@@ -46,10 +46,13 @@ function toDaFeatureProperties(
   if (!feature?.properties) return null;
   const properties = feature.properties as Record<string, unknown>;
   const dguid = properties.DGUID;
+  const dauid = properties.DAUID;
   if (dguid === null || dguid === undefined) return null;
+  if (dauid === null || dauid === undefined) return null;
   return {
     ...properties,
     DGUID: String(dguid),
+    DAUID: String(dauid),
   } as DaFeatureProperties;
 }
 

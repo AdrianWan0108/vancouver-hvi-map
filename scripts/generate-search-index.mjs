@@ -247,8 +247,8 @@ async function generateSearchIndex() {
     filePath: path.resolve("public/tiles/hvi_da.pmtiles"),
     layerName: "hvi_da",
     getFeatureKey: (properties) => {
-      const dguid = properties.DGUID;
-      return dguid === null || dguid === undefined ? null : String(dguid);
+      const dauid = properties.DAUID;
+      return dauid === null || dauid === undefined ? null : String(dauid);
     },
     buildEntry: ({ key, bounds, center, properties, geometry, zoom }) => {
       const regionMatch = regionGeometries.find((region) => {
@@ -268,7 +268,7 @@ async function generateSearchIndex() {
       return {
         kind: "da",
         key,
-        label: `DA ${key}`,
+        label: `DA ${String(properties.DAUID ?? key)}`,
         secondaryLabel: regionMatch?.label ?? null,
         bbox: bounds,
         center,
@@ -289,7 +289,7 @@ async function generateSearchIndex() {
   ];
 
   const output = {
-    version: 1,
+    version: 2,
     generatedAt: new Date().toISOString(),
     entries,
   };

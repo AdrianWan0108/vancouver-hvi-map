@@ -18,7 +18,7 @@ function getSearchScore(entry: SearchEntry, query: string): number | null {
 
   const primaryId =
     entry.kind === "da"
-      ? normalizeSearchText(entry.properties.DGUID)
+      ? normalizeSearchText(entry.properties.DAUID)
       : normalizeSearchText(entry.label);
 
   if (primaryId === normalizedQuery) return 0;

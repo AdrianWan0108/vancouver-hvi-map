@@ -74,7 +74,7 @@ export default function SearchOverlay({ onSelectResult }: SearchOverlayProps) {
         da: entry.properties,
         regionName: entry.regionName,
       });
-      setQuery(entry.properties.DGUID);
+      setQuery(entry.properties.DAUID);
     } else {
       dispatch({ type: "unlockRegion" });
       dispatch({ type: "regionClicked", region: entry.properties });
@@ -113,7 +113,7 @@ export default function SearchOverlay({ onSelectResult }: SearchOverlayProps) {
               }}
               placeholder={
                 searchIndex
-                  ? "Search by region name or DA ID"
+                  ? "Search by region name or DAUID"
                   : "Loading region and DA search..."
               }
               disabled={!searchIndex && !loadError}
@@ -143,7 +143,7 @@ export default function SearchOverlay({ onSelectResult }: SearchOverlayProps) {
                   <p className="px-4 py-3 text-sm text-muted-foreground">{loadError}</p>
                 ) : results.length === 0 ? (
                   <p className="px-4 py-3 text-sm text-muted-foreground">
-                    No matching regions or DA IDs.
+                    No matching regions or DAUIDs.
                   </p>
                 ) : (
                   <div className="grid">

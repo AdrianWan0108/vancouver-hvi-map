@@ -29,19 +29,19 @@ export function getPeripheralVisibilityDescription(zoomMode: ZoomMode): string {
 
 export function getPanelHeaderContent({
   zoomMode,
-  activeDaDguid,
+  activeDaDauid,
   activeDaRegionName,
   activeRegionName,
 }: {
   zoomMode: ZoomMode;
-  activeDaDguid: string | null;
+  activeDaDauid: string | null;
   activeDaRegionName: string | null;
   activeRegionName: string | null;
 }): PanelHeaderContent {
   if (zoomMode === "da") {
-    if (activeDaDguid) {
+    if (activeDaDauid) {
       return {
-        title: `DA ${activeDaDguid}`,
+        title: `DA ${activeDaDauid}`,
         subtitle: activeDaRegionName,
       };
     }
