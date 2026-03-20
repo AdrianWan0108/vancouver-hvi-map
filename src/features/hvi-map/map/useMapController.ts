@@ -1,4 +1,4 @@
-import { useEffect, useRef, type RefObject } from "react";
+import { useCallback, useEffect, useRef, type RefObject } from "react";
 import maplibregl, { Map } from "maplibre-gl";
 import type { MapGeoJSONFeature, MapLayerMouseEvent, MapMouseEvent } from "maplibre-gl";
 import { PMTiles, Protocol } from "pmtiles";
@@ -14,15 +14,21 @@ import type {
   FeatureId,
   RegionFeatureProperties,
 } from "../types/data";
+import type { SearchBounds, SearchEntry } from "../types/search";
 import { formatMetricValue, formatScore } from "../utils/format";
 import { getRegionDisplayName } from "../utils/region";
 import {
+  DA_ZOOM_REGION_DIVIDER_CASING_STYLE,
+  DA_ZOOM_REGION_DIVIDER_STYLE,
   buildDaFillOpacityExpression,
   buildFillColorExpression,
   buildFilterExpression,
+  buildLockedFeatureFilterExpression,
   buildLineWidthExpression,
   buildRegionVisibilityFilterExpression,
+  LOCKED_DA_OUTLINE_STYLE,
 } from "./expressions";
+import { getFirstPlaceLabelLayerId } from "./layerPlacement";
 import { MAP_LAYERS, MAP_SOURCES, SOURCE_LAYERS } from "./layers";
 import { getPmtilesUrls } from "./sources";
 import { useMapState } from "../state/useMapState";
@@ -99,6 +105,13 @@ function buildPopupContent({
   wrapper.appendChild(valueEl);
 
   return wrapper;
+}
+
+function toLngLatBounds(bounds: SearchBounds): [[number, number], [number, number]] {
+  return [
+    [bounds[0], bounds[1]],
+    [bounds[2], bounds[3]],
+  ];
 }
 
 export function useMapController(containerRef: RefObject<HTMLDivElement | null>) {
@@ -215,6 +228,7 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
         );
         const regionFillColor = buildFillColorExpression(REGION_HVI_METRIC);
         const daFillColor = buildFillColorExpression(metric);
+        const beforeLabelLayerId = getFirstPlaceLabelLayerId(map.getStyle().layers);
 
         map.addSource(MAP_SOURCES.da, {
           type: "vector",
@@ -246,7 +260,7 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
               0.75,
             ],
           },
-        });
+        }, beforeLabelLayerId);
 
         map.addLayer({
           id: MAP_LAYERS.regionsLine,
@@ -261,7 +275,7 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
             "line-width": buildLineWidthExpression(2, 1),
             "line-opacity": 0.25,
           },
-        });
+        }, beforeLabelLayerId);
 
         map.addLayer({
           id: MAP_LAYERS.regionsLookup,
@@ -273,7 +287,7 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
             "fill-opacity": 0,
             "fill-outline-color": "rgba(0,0,0,0)",
           },
-        });
+        }, beforeLabelLayerId);
 
         map.addLayer({
           id: MAP_LAYERS.daFill,
@@ -286,7 +300,7 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
             "fill-outline-color": daFillColor,
             "fill-opacity": buildDaFillOpacityExpression(metric, daFilterExpression),
           },
-        });
+        }, beforeLabelLayerId);
 
         map.addLayer({
           id: MAP_LAYERS.daLine,
@@ -298,7 +312,62 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
             "line-width": buildLineWidthExpression(1.6, 0.6),
             "line-opacity": 0.2,
           },
-        });
+        }, beforeLabelLayerId);
+
+        map.addLayer({
+          id: MAP_LAYERS.regionsLineDaCasing,
+          type: "line",
+          source: MAP_SOURCES.regions,
+          "source-layer": SOURCE_LAYERS.regions,
+          minzoom: ZOOM_DA,
+          layout: {
+            "line-cap": "round",
+            "line-join": "round",
+          },
+          paint: {
+            "line-color": DA_ZOOM_REGION_DIVIDER_CASING_STYLE.color,
+            "line-width": DA_ZOOM_REGION_DIVIDER_CASING_STYLE.width,
+            "line-opacity": DA_ZOOM_REGION_DIVIDER_CASING_STYLE.opacity,
+          },
+        }, beforeLabelLayerId);
+
+        map.addLayer({
+          id: MAP_LAYERS.regionsLineDa,
+          type: "line",
+          source: MAP_SOURCES.regions,
+          "source-layer": SOURCE_LAYERS.regions,
+          minzoom: ZOOM_DA,
+          layout: {
+            "line-cap": "round",
+            "line-join": "round",
+          },
+          paint: {
+            "line-color": DA_ZOOM_REGION_DIVIDER_STYLE.color,
+            "line-width": DA_ZOOM_REGION_DIVIDER_STYLE.width,
+            "line-opacity": DA_ZOOM_REGION_DIVIDER_STYLE.opacity,
+          },
+        }, beforeLabelLayerId);
+
+        map.addLayer({
+          id: MAP_LAYERS.daLockedLine,
+          type: "line",
+          source: MAP_SOURCES.da,
+          "source-layer": SOURCE_LAYERS.da,
+          minzoom: ZOOM_DA,
+          filter: buildLockedFeatureFilterExpression(
+            "DGUID",
+            stateRef.current.lockedDa?.DGUID ?? null
+          ),
+          layout: {
+            "line-cap": "round",
+            "line-join": "round",
+          },
+          paint: {
+            "line-color": LOCKED_DA_OUTLINE_STYLE.color,
+            "line-width": LOCKED_DA_OUTLINE_STYLE.width,
+            "line-opacity": LOCKED_DA_OUTLINE_STYLE.opacity,
+          },
+        }, beforeLabelLayerId);
       } catch (error) {
         const message =
           error instanceof Error
@@ -497,6 +566,17 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
+    if (!map.getLayer(MAP_LAYERS.daLockedLine)) return;
+
+    map.setFilter(
+      MAP_LAYERS.daLockedLine,
+      buildLockedFeatureFilterExpression("DGUID", state.lockedDa?.DGUID ?? null)
+    );
+  }, [state.lockedDa]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
     if (!map.getLayer(MAP_LAYERS.regionsFill)) return;
 
     const regionVisibilityFilter = buildRegionVisibilityFilterExpression(
@@ -530,4 +610,46 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
       dispatch({ type: "hoveredRegionChanged", region: null });
     }
   }, [dispatch, state.lockedRegion, state.showPeripheralAreas, state.zoomMode]);
+
+  const focusSearchResult = useCallback((entry: SearchEntry) => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    tooltipRef.current?.remove();
+    map.getCanvas().style.cursor = "";
+
+    const padding = { top: 72, right: 40, bottom: 40, left: 40 };
+    const bounds = toLngLatBounds(entry.bbox);
+    const isCollapsedBounds =
+      entry.bbox[0] === entry.bbox[2] || entry.bbox[1] === entry.bbox[3];
+
+    if (entry.kind === "region") {
+      if (isCollapsedBounds) {
+        map.flyTo({ center: entry.center, zoom: 9.5, essential: true });
+        return;
+      }
+
+      map.fitBounds(bounds, {
+        padding,
+        maxZoom: ZOOM_DA - 0.3,
+        duration: 700,
+        essential: true,
+      });
+      return;
+    }
+
+    if (isCollapsedBounds) {
+      map.flyTo({ center: entry.center, zoom: ZOOM_DA + 1.5, essential: true });
+      return;
+    }
+
+    map.fitBounds(bounds, {
+      padding,
+      maxZoom: 14,
+      duration: 700,
+      essential: true,
+    });
+  }, []);
+
+  return { focusSearchResult };
 }

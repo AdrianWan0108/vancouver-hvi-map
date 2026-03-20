@@ -17,6 +17,24 @@ type VisibilityMetricConfig = {
   noDataPolicy: DaMetricConfig["noDataPolicy"];
 };
 
+export const DA_ZOOM_REGION_DIVIDER_STYLE = {
+  color: "rgba(15, 23, 42, 0.45)",
+  width: 1.6,
+  opacity: 0.45,
+} as const;
+
+export const DA_ZOOM_REGION_DIVIDER_CASING_STYLE = {
+  color: "rgba(255, 248, 236, 0.96)",
+  width: 4.6,
+  opacity: 0.96,
+} as const;
+
+export const LOCKED_DA_OUTLINE_STYLE = {
+  color: "rgba(15, 23, 42, 0.95)",
+  width: 3,
+  opacity: 0.95,
+} as const;
+
 function buildClampedValueExpression(
   propertyKey: string,
   domainMin: number,
@@ -71,6 +89,23 @@ export function buildRegionVisibilityFilterExpression(
     "all",
     ["has", "region_pop_total"],
     [">=", ["to-number", ["get", "region_pop_total"]], populationThreshold],
+  ] as ExpressionSpecification;
+}
+
+export function buildLockedFeatureFilterExpression(
+  propertyKey: string,
+  featureId: string | number | null
+): ExpressionSpecification {
+  const noMatchValue = "__map_no_locked_feature__";
+
+  return [
+    "all",
+    ["has", propertyKey],
+    [
+      "==",
+      ["get", propertyKey],
+      featureId === null ? noMatchValue : String(featureId),
+    ],
   ] as ExpressionSpecification;
 }
 

@@ -1,9 +1,9 @@
-import { useRef } from "react";
-import { useMapController } from "../map/useMapController";
+import type { RefObject } from "react";
 
-export default function MapCanvas() {
-  const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  useMapController(mapContainerRef);
+interface MapCanvasProps {
+  containerRef: RefObject<HTMLDivElement | null>;
+}
 
-  return <div ref={mapContainerRef} className="h-full w-full" />;
+export default function MapCanvas({ containerRef }: MapCanvasProps) {
+  return <div ref={containerRef} className="h-full w-full" />;
 }

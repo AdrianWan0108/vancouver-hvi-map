@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { DA_METRICS_BY_ID } from "../../src/features/hvi-map/config/daMetrics";
 import {
+  DA_ZOOM_REGION_DIVIDER_CASING_STYLE,
+  DA_ZOOM_REGION_DIVIDER_STYLE,
   buildDaFillOpacityExpression,
   buildFillColorExpression,
   buildFilterExpression,
+  buildLockedFeatureFilterExpression,
   buildRegionVisibilityFilterExpression,
+  LOCKED_DA_OUTLINE_STYLE,
 } from "../../src/features/hvi-map/map/expressions";
 import { createInitialMapUiState } from "../../src/features/hvi-map/state/reducer";
 
@@ -96,5 +100,45 @@ describe("map expressions", () => {
       ["has", "region_pop_total"],
       [">=", ["to-number", ["get", "region_pop_total"]], 5000],
     ]);
+  });
+
+  it("builds a locked-feature filter that matches the selected DA", () => {
+    expect(buildLockedFeatureFilterExpression("DGUID", "2021S051259150657")).toEqual([
+      "all",
+      ["has", "DGUID"],
+      ["==", ["get", "DGUID"], "2021S051259150657"],
+    ]);
+  });
+
+  it("builds a locked-feature filter that matches nothing when no DA is locked", () => {
+    expect(buildLockedFeatureFilterExpression("DGUID", null)).toEqual([
+      "all",
+      ["has", "DGUID"],
+      ["==", ["get", "DGUID"], "__map_no_locked_feature__"],
+    ]);
+  });
+
+  it("keeps DA-zoom region dividers weaker than the locked DA outline", () => {
+    expect(DA_ZOOM_REGION_DIVIDER_CASING_STYLE).toEqual({
+      color: "rgba(255, 248, 236, 0.96)",
+      width: 4.6,
+      opacity: 0.96,
+    });
+    expect(DA_ZOOM_REGION_DIVIDER_STYLE).toEqual({
+      color: "rgba(15, 23, 42, 0.45)",
+      width: 1.6,
+      opacity: 0.45,
+    });
+    expect(LOCKED_DA_OUTLINE_STYLE).toEqual({
+      color: "rgba(15, 23, 42, 0.95)",
+      width: 3,
+      opacity: 0.95,
+    });
+    expect(DA_ZOOM_REGION_DIVIDER_CASING_STYLE.width).toBeGreaterThan(
+      DA_ZOOM_REGION_DIVIDER_STYLE.width
+    );
+    expect(LOCKED_DA_OUTLINE_STYLE.width).toBeGreaterThan(
+      DA_ZOOM_REGION_DIVIDER_STYLE.width
+    );
   });
 });
