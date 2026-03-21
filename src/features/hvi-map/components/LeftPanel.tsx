@@ -1,13 +1,11 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { DA_METRICS_BY_ID } from "../config/daMetrics";
-import { REGION_HVI_METRIC } from "../config/regionConfig";
 import FilterMenu from "./FilterMenu";
 import LayerSelect from "./LayerSelect";
 import InfoModeSection from "./InfoModeSection";
 import DaDetailsSection from "./DaDetailsSection";
-import MetricLegend from "./MetricLegend";
 import RegionDetailsSection from "./RegionDetailsSection";
 import ViewOptionsSection from "./ViewOptionsSection";
+import FontPreviewSection from "./FontPreviewSection";
 import {
   getPanelHeaderContent,
   shouldShowDaControls,
@@ -37,14 +35,6 @@ export default function LeftPanel() {
     activeDaRegionName,
     activeRegionName,
   });
-  const activeLegendMetric =
-    state.zoomMode === "da"
-      ? DA_METRICS_BY_ID[state.selectedMetric]
-      : REGION_HVI_METRIC;
-  const activeLegendCategory =
-    state.zoomMode === "da"
-      ? DA_METRICS_BY_ID[state.selectedMetric].category
-      : "Region";
 
   return (
     <aside className="flex h-full min-h-0 w-full flex-col border-b border-border/80 bg-card md:w-[24rem] md:flex-none md:border-r md:border-b-0">
@@ -58,7 +48,10 @@ export default function LeftPanel() {
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col">
-        <div className="min-h-0 flex-1 overflow-auto px-5 py-4">
+        <div
+          data-hvi-panel-scroll="true"
+          className="min-h-0 flex-1 overflow-auto px-5 py-4"
+        >
           <div className="grid gap-4">
             {state.mapError ? (
               <Alert variant="destructive">
@@ -114,15 +107,7 @@ export default function LeftPanel() {
                 <FilterMenu />
               </>
             ) : null}
-
-            <MetricLegend
-              label={activeLegendMetric.label}
-              category={activeLegendCategory}
-              paletteId={activeLegendMetric.paletteId}
-              format={activeLegendMetric.format}
-              domainMin={activeLegendMetric.domainMin}
-              domainMax={activeLegendMetric.domainMax}
-            />
+            <FontPreviewSection />
           </div>
         </div>
       </div>

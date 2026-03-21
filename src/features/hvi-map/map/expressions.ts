@@ -1,5 +1,6 @@
 import type { ExpressionSpecification } from "@maplibre/maplibre-gl-style-spec";
 import type { DaMetricConfig, DaMetricId, MetricPaletteId } from "../config/daMetrics";
+import { isFilterRangeActive } from "../state/filterRanges";
 import { getPaletteStops } from "../config/palettes";
 import type { DaFiltersState } from "../types/state";
 
@@ -120,23 +121,15 @@ export function buildFilterExpression(
 
   for (const metricId of metricIds) {
     const filter = filters[metricId];
-    if (!filter.enabled) continue;
+    if (!isFilterRangeActive(metricId, filter)) continue;
 
     const metric = metricsById[metricId];
     const propertyKey = String(metric.propertyKey);
     const valueExpression: unknown[] = ["to-number", ["get", propertyKey]];
     const checks: unknown[][] = [["has", propertyKey]];
 
-    if (filter.min !== null) {
-      checks.push([">=", valueExpression, filter.min]);
-    }
-    if (filter.max !== null) {
-      checks.push(["<=", valueExpression, filter.max]);
-    }
-
-    if (checks.length === 1 && filter.min === null && filter.max === null) {
-      continue;
-    }
+    checks.push([">=", valueExpression, filter.min]);
+    checks.push(["<=", valueExpression, filter.max]);
 
     clauses.push(["all", ...checks]);
   }

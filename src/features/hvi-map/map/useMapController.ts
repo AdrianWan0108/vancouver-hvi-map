@@ -28,6 +28,7 @@ import {
   buildRegionVisibilityFilterExpression,
   LOCKED_DA_OUTLINE_STYLE,
 } from "./expressions";
+import { collapseCompactAttributionControl } from "./attribution";
 import { getFirstPlaceLabelLayerId } from "./layerPlacement";
 import { MAP_LAYERS, MAP_SOURCES, SOURCE_LAYERS } from "./layers";
 import { getPmtilesUrls } from "./sources";
@@ -147,13 +148,19 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
       style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
       center: VANCOUVER_CENTER,
       zoom: 9.5,
+      attributionControl: false,
     });
 
     map.addControl(new maplibregl.NavigationControl(), "top-right");
+    map.addControl(new maplibregl.AttributionControl({ compact: true }), "top-left");
     map.addControl(
       new maplibregl.ScaleControl({ maxWidth: 200, unit: "metric" }),
       "bottom-left"
     );
+    const collapseAttribution = () => {
+      const container = map.getContainer()
+      collapseCompactAttributionControl(container)
+    }
 
     const tooltip = new maplibregl.Popup({
       className: "map-tooltip-popup",
@@ -164,6 +171,7 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
 
     mapRef.current = map;
     tooltipRef.current = tooltip;
+    requestAnimationFrame(collapseAttribution);
 
     const hideTooltip = () => {
       tooltip.remove();
@@ -381,8 +389,10 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
       }
 
       updateZoomMode();
+      collapseAttribution();
 
       map.on("zoom", updateZoomMode);
+      map.on("resize", collapseAttribution);
 
       map.on("mousemove", MAP_LAYERS.regionsFill, (event: MapLayerMouseEvent) => {
         if (stateRef.current.zoomMode !== "region") return;

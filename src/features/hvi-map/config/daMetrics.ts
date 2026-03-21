@@ -32,6 +32,12 @@ export type DaMetricCategory =
   | "Population"
   | "Social & Housing"
   | "Land Cover & Built";
+export type DaFilterGroup =
+  | "hvi"
+  | "exposure"
+  | "sensitivity"
+  | "adaptiveCapacity"
+  | "population";
 export type DaMetricFormatId =
   | "score3"
   | "percent1"
@@ -44,12 +50,21 @@ export interface DaMetricConfig {
   propertyKey: Extract<keyof DaFeatureProperties, string>;
   label: string;
   category: DaMetricCategory;
+  filterGroup: DaFilterGroup;
   format: DaMetricFormatId;
   domainMin: number;
   domainMax: number;
   paletteId: MetricPaletteId;
   noDataPolicy: NoDataPolicy;
 }
+
+export const DA_FILTER_GROUPS = [
+  { id: "hvi", label: "HVI" },
+  { id: "exposure", label: "Exposure" },
+  { id: "sensitivity", label: "Sensitivity" },
+  { id: "adaptiveCapacity", label: "Adaptive Capacity" },
+  { id: "population", label: "Population" },
+] as const satisfies readonly { id: DaFilterGroup; label: string }[];
 
 export const DEFAULT_DA_METRIC_ID: DaMetricId = "hvi_index_n01";
 
@@ -59,6 +74,7 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     propertyKey: "hvi_index_n01",
     label: "HVI (0-1)",
     category: "HVI",
+    filterGroup: "hvi",
     format: "score3",
     domainMin: 0.06462950439663971,
     domainMax: 0.733616020899424,
@@ -70,6 +86,7 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     propertyKey: "sensitivity_index",
     label: "Sensitivity Index",
     category: "HVI",
+    filterGroup: "sensitivity",
     format: "score3",
     domainMin: 0,
     domainMax: 0.7991342281879195,
@@ -81,6 +98,7 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     propertyKey: "adaptive_capacity_index",
     label: "Adaptive Capacity Index",
     category: "HVI",
+    filterGroup: "adaptiveCapacity",
     format: "score3",
     domainMin: 0.0091336884032457,
     domainMax: 1,
@@ -92,6 +110,7 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     propertyKey: "exposure_index",
     label: "Exposure Index",
     category: "Exposure",
+    filterGroup: "exposure",
     format: "score3",
     domainMin: 0,
     domainMax: 0.9705087479648702,
@@ -103,6 +122,7 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     propertyKey: "exposure_mean",
     label: "Exposure Mean (deg C)",
     category: "Exposure",
+    filterGroup: "exposure",
     format: "number2",
     domainMin: 17.54,
     domainMax: 32.352,
@@ -114,6 +134,7 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     propertyKey: "pop_total",
     label: "Population",
     category: "Population",
+    filterGroup: "population",
     format: "integer",
     domainMin: 0,
     domainMax: 8800,
@@ -125,6 +146,7 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     propertyKey: "unemployment_rate",
     label: "Unemployment Rate (%)",
     category: "Social & Housing",
+    filterGroup: "sensitivity",
     format: "percent1",
     domainMin: 0,
     domainMax: 50,
@@ -136,6 +158,7 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     propertyKey: "low_income_rate",
     label: "Low Income Rate (%)",
     category: "Social & Housing",
+    filterGroup: "sensitivity",
     format: "percent1",
     domainMin: 1.4,
     domainMax: 61,
@@ -147,6 +170,7 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     propertyKey: "pct_seniors_65plus",
     label: "% Seniors 65+",
     category: "Social & Housing",
+    filterGroup: "sensitivity",
     format: "percent1",
     domainMin: 0.7824726134585289,
     domainMax: 65.44502617801047,
@@ -158,6 +182,7 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     propertyKey: "pct_living_alone",
     label: "% Living Alone",
     category: "Social & Housing",
+    filterGroup: "sensitivity",
     format: "percent1",
     domainMin: 0,
     domainMax: 57.59162303664922,
@@ -169,6 +194,7 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     propertyKey: "pct_renter",
     label: "% Renters",
     category: "Social & Housing",
+    filterGroup: "adaptiveCapacity",
     format: "percent1",
     domainMin: 0,
     domainMax: 100,
@@ -180,6 +206,7 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     propertyKey: "pct_core_need",
     label: "% Core Housing Need",
     category: "Social & Housing",
+    filterGroup: "adaptiveCapacity",
     format: "percent1",
     domainMin: 0,
     domainMax: 75,
@@ -191,6 +218,7 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     propertyKey: "pct_major_repairs",
     label: "% Major Repairs",
     category: "Social & Housing",
+    filterGroup: "adaptiveCapacity",
     format: "percent1",
     domainMin: 0,
     domainMax: 57.89473684210527,
@@ -202,6 +230,7 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     propertyKey: "green_frac",
     label: "Green Fraction",
     category: "Land Cover & Built",
+    filterGroup: "adaptiveCapacity",
     format: "score3",
     domainMin: 0,
     domainMax: 0.9769045884923524,
@@ -213,6 +242,7 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     propertyKey: "frac_coniferous",
     label: "Coniferous Fraction",
     category: "Land Cover & Built",
+    filterGroup: "adaptiveCapacity",
     format: "score3",
     domainMin: 0,
     domainMax: 0.9623840738043214,
@@ -224,6 +254,7 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     propertyKey: "frac_deciduous",
     label: "Deciduous Fraction",
     category: "Land Cover & Built",
+    filterGroup: "adaptiveCapacity",
     format: "score3",
     domainMin: 0,
     domainMax: 0.6710048679302096,
@@ -235,6 +266,7 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     propertyKey: "frac_shrub",
     label: "Shrub Fraction",
     category: "Land Cover & Built",
+    filterGroup: "adaptiveCapacity",
     format: "score3",
     domainMin: 0,
     domainMax: 0.2334325083523095,
@@ -246,6 +278,7 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     propertyKey: "frac_buildings",
     label: "Buildings Fraction",
     category: "Land Cover & Built",
+    filterGroup: "exposure",
     format: "score3",
     domainMin: 0,
     domainMax: 0.6209677419354839,
@@ -257,6 +290,7 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     propertyKey: "frac_other_built",
     label: "Other Built Fraction",
     category: "Land Cover & Built",
+    filterGroup: "exposure",
     format: "score3",
     domainMin: 0,
     domainMax: 0.3625834695630489,
@@ -268,6 +302,7 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     propertyKey: "frac_paved",
     label: "Paved Fraction",
     category: "Land Cover & Built",
+    filterGroup: "exposure",
     format: "score3",
     domainMin: 0,
     domainMax: 0.734375,
@@ -279,6 +314,7 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     propertyKey: "hardscape_frac",
     label: "Hardscape Fraction",
     category: "Land Cover & Built",
+    filterGroup: "exposure",
     format: "score3",
     domainMin: 0,
     domainMax: 1,

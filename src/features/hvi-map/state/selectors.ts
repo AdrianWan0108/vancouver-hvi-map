@@ -1,17 +1,18 @@
 import { DA_METRIC_IDS, DA_METRICS_BY_ID } from "../config/daMetrics";
+import { isFilterRangeActive } from "./filterRanges";
 import type { DaFeatureProperties, RegionFeatureProperties } from "../types/data";
 import type { MapUiState, PanelMode } from "../types/state";
 import { toNumber } from "../utils/format";
 
 function valueMatchesRange(
   value: unknown,
-  min: number | null,
-  max: number | null
+  min: number,
+  max: number
 ): boolean {
   const numeric = toNumber(value);
   if (numeric === null) return false;
-  if (min !== null && numeric < min) return false;
-  if (max !== null && numeric > max) return false;
+  if (numeric < min) return false;
+  if (numeric > max) return false;
   return true;
 }
 
@@ -21,7 +22,7 @@ export function doesDaMatchFilters(
 ): boolean {
   for (const metricId of DA_METRIC_IDS) {
     const filter = state.filters[metricId];
-    if (!filter.enabled) continue;
+    if (!isFilterRangeActive(metricId, filter)) continue;
 
     const metric = DA_METRICS_BY_ID[metricId];
     if (!valueMatchesRange(da[metric.propertyKey], filter.min, filter.max)) {

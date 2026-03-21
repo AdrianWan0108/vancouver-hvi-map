@@ -6,9 +6,8 @@ import type {
 } from "./data";
 
 export interface DaFilterRange {
-  min: number | null;
-  max: number | null;
-  enabled: boolean;
+  min: number;
+  max: number;
 }
 
 export type DaFiltersState = Record<DaMetricId, DaFilterRange>;
@@ -44,11 +43,9 @@ export type MapAction =
   | {
       type: "filterRangeChanged";
       metricId: DaMetricId;
-      min: number | null;
-      max: number | null;
-      enabled?: boolean;
+      min: number;
+      max: number;
     }
-  | { type: "filterEnabledChanged"; metricId: DaMetricId; enabled: boolean }
   | { type: "filtersReset" }
   | { type: "filterMenuOpenChanged"; isOpen: boolean }
   | { type: "peripheralVisibilityChanged"; showPeripheralAreas: boolean }

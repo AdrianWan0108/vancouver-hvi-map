@@ -47,25 +47,23 @@ describe("map expressions", () => {
     expect(expression[8]).toBe("#9b2226");
   });
 
-  it("returns true filter when no filters are enabled", () => {
+  it("returns true filter when all filters are at their full domains", () => {
     const state = createInitialMapUiState();
     const expression = buildFilterExpression(state.filters, DA_METRICS_BY_ID);
     expect(expression).toBe(true);
   });
 
-  it("builds all-clauses expression when multiple filters are enabled", () => {
+  it("builds all-clauses expression when multiple ranges are active", () => {
     const state = createInitialMapUiState();
     const filters = {
       ...state.filters,
       hvi_index_n01: {
         ...state.filters.hvi_index_n01,
-        enabled: true,
         min: 0.2,
-        max: 0.8,
+        max: 0.7,
       },
       pop_total: {
         ...state.filters.pop_total,
-        enabled: true,
         min: 200,
         max: 1200,
       },

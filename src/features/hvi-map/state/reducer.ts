@@ -4,6 +4,7 @@ import {
   DEFAULT_DA_METRIC_ID,
   type DaMetricId,
 } from "../config/daMetrics";
+import { normalizeFilterRange } from "./filterRanges";
 import type { RegionFeatureProperties } from "../types/data";
 import type { DaFiltersState, MapAction, MapUiState } from "../types/state";
 
@@ -14,23 +15,9 @@ function createInitialFilters(): DaFiltersState {
     filters[metricId] = {
       min: metricConfig.domainMin,
       max: metricConfig.domainMax,
-      enabled: false,
     };
   }
   return filters;
-}
-
-function normalizeRange(
-  min: number | null,
-  max: number | null
-): { min: number | null; max: number | null } {
-  if (min === null || max === null) {
-    return { min, max };
-  }
-  if (min <= max) {
-    return { min, max };
-  }
-  return { min: max, max: min };
 }
 
 function getRegionKey(region: RegionFeatureProperties): string | number | null {
@@ -131,9 +118,11 @@ export function mapUiReducer(state: MapUiState, action: MapAction): MapUiState {
       return { ...state, selectedMetric: action.metricId };
     }
     case "filterRangeChanged": {
-      const normalized = normalizeRange(action.min, action.max);
-      const hasBounds = normalized.min !== null || normalized.max !== null;
-      const nextEnabled = action.enabled ?? hasBounds;
+      const normalized = normalizeFilterRange(
+        action.metricId,
+        action.min,
+        action.max
+      );
 
       return {
         ...state,
@@ -142,20 +131,6 @@ export function mapUiReducer(state: MapUiState, action: MapAction): MapUiState {
           [action.metricId]: {
             min: normalized.min,
             max: normalized.max,
-            enabled: nextEnabled,
-          },
-        },
-      };
-    }
-    case "filterEnabledChanged": {
-      const current = state.filters[action.metricId];
-      return {
-        ...state,
-        filters: {
-          ...state.filters,
-          [action.metricId]: {
-            ...current,
-            enabled: action.enabled,
           },
         },
       };

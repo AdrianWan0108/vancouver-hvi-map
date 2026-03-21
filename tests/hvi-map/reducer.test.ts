@@ -90,28 +90,28 @@ describe("mapUiReducer", () => {
     expect(backToRegion.lockedDaRegionName).toBe("Metro Core");
   });
 
-  it("normalizes filter ranges and disables filter with empty bounds", () => {
+  it("normalizes and clamps filter ranges", () => {
     const initial = createInitialMapUiState();
 
-    const enabledWithBounds = mapUiReducer(initial, {
+    const normalized = mapUiReducer(initial, {
       type: "filterRangeChanged",
-      metricId: "hvi_index_n01",
-      min: 0.8,
-      max: 0.2,
+      metricId: "exposure_mean",
+      min: 30,
+      max: 20,
     });
 
-    expect(enabledWithBounds.filters.hvi_index_n01.min).toBe(0.2);
-    expect(enabledWithBounds.filters.hvi_index_n01.max).toBe(0.8);
-    expect(enabledWithBounds.filters.hvi_index_n01.enabled).toBe(true);
+    expect(normalized.filters.exposure_mean.min).toBe(20);
+    expect(normalized.filters.exposure_mean.max).toBe(30);
 
-    const disabledWithEmptyBounds = mapUiReducer(enabledWithBounds, {
+    const clamped = mapUiReducer(normalized, {
       type: "filterRangeChanged",
       metricId: "hvi_index_n01",
-      min: null,
-      max: null,
+      min: -5,
+      max: 99,
     });
 
-    expect(disabledWithEmptyBounds.filters.hvi_index_n01.enabled).toBe(false);
+    expect(clamped.filters.hvi_index_n01.min).toBe(0.06462950439663971);
+    expect(clamped.filters.hvi_index_n01.max).toBe(0.733616020899424);
   });
 
   it("locks, unlocks, and switches lock on region clicks", () => {

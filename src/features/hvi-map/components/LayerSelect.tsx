@@ -33,7 +33,12 @@ export default function LayerSelect() {
         <SelectTrigger size="sm" className="w-full bg-background">
           <SelectValue placeholder="Select a layer" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent
+          position="popper"
+          align="start"
+          className="w-[min(24rem,var(--radix-select-trigger-width))] max-w-[24rem]"
+          viewportClassName="max-h-[min(32rem,70vh)]"
+        >
           {layerGroups.map((group, index) => (
             <Fragment key={group.label}>
               {index > 0 ? <SelectSeparator /> : null}
