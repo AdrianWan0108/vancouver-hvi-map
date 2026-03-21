@@ -25,7 +25,14 @@ export const DA_METRIC_IDS = [
 ] as const;
 
 export type DaMetricId = (typeof DA_METRIC_IDS)[number];
-export type MetricPaletteId = "risk" | "benefit" | "density";
+export type MetricPaletteId =
+  | "hvi"
+  | "heat"
+  | "social"
+  | "housing"
+  | "adaptive"
+  | "context"
+  | "built";
 export type DaMetricCategory =
   | "HVI"
   | "Exposure"
@@ -54,6 +61,8 @@ export interface DaMetricConfig {
   format: DaMetricFormatId;
   domainMin: number;
   domainMax: number;
+  colorDomainMin: number;
+  colorDomainMax: number;
   paletteId: MetricPaletteId;
   noDataPolicy: NoDataPolicy;
 }
@@ -78,7 +87,9 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     format: "score3",
     domainMin: 0.06462950439663971,
     domainMax: 0.733616020899424,
-    paletteId: "risk",
+    colorDomainMin: 0,
+    colorDomainMax: 1,
+    paletteId: "hvi",
     noDataPolicy: "transparent",
   },
   {
@@ -90,7 +101,9 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     format: "score3",
     domainMin: 0,
     domainMax: 0.7991342281879195,
-    paletteId: "risk",
+    colorDomainMin: 0,
+    colorDomainMax: 1,
+    paletteId: "social",
     noDataPolicy: "transparent",
   },
   {
@@ -102,7 +115,9 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     format: "score3",
     domainMin: 0.0091336884032457,
     domainMax: 1,
-    paletteId: "benefit",
+    colorDomainMin: 0,
+    colorDomainMax: 1,
+    paletteId: "adaptive",
     noDataPolicy: "transparent",
   },
   {
@@ -114,7 +129,9 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     format: "score3",
     domainMin: 0,
     domainMax: 0.9705087479648702,
-    paletteId: "risk",
+    colorDomainMin: 0,
+    colorDomainMax: 1,
+    paletteId: "heat",
     noDataPolicy: "transparent",
   },
   {
@@ -126,7 +143,9 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     format: "number2",
     domainMin: 17.54,
     domainMax: 32.352,
-    paletteId: "risk",
+    colorDomainMin: 17.54,
+    colorDomainMax: 32.352,
+    paletteId: "heat",
     noDataPolicy: "transparent",
   },
   {
@@ -138,7 +157,9 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     format: "integer",
     domainMin: 0,
     domainMax: 8800,
-    paletteId: "density",
+    colorDomainMin: 0,
+    colorDomainMax: 8800,
+    paletteId: "context",
     noDataPolicy: "transparent",
   },
   {
@@ -150,7 +171,9 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     format: "percent1",
     domainMin: 0,
     domainMax: 50,
-    paletteId: "risk",
+    colorDomainMin: 0,
+    colorDomainMax: 100,
+    paletteId: "social",
     noDataPolicy: "transparent",
   },
   {
@@ -162,7 +185,9 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     format: "percent1",
     domainMin: 1.4,
     domainMax: 61,
-    paletteId: "risk",
+    colorDomainMin: 0,
+    colorDomainMax: 100,
+    paletteId: "social",
     noDataPolicy: "transparent",
   },
   {
@@ -174,7 +199,9 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     format: "percent1",
     domainMin: 0.7824726134585289,
     domainMax: 65.44502617801047,
-    paletteId: "risk",
+    colorDomainMin: 0,
+    colorDomainMax: 100,
+    paletteId: "social",
     noDataPolicy: "transparent",
   },
   {
@@ -186,7 +213,9 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     format: "percent1",
     domainMin: 0,
     domainMax: 57.59162303664922,
-    paletteId: "risk",
+    colorDomainMin: 0,
+    colorDomainMax: 100,
+    paletteId: "social",
     noDataPolicy: "transparent",
   },
   {
@@ -198,7 +227,9 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     format: "percent1",
     domainMin: 0,
     domainMax: 100,
-    paletteId: "risk",
+    colorDomainMin: 0,
+    colorDomainMax: 100,
+    paletteId: "housing",
     noDataPolicy: "transparent",
   },
   {
@@ -210,7 +241,9 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     format: "percent1",
     domainMin: 0,
     domainMax: 75,
-    paletteId: "risk",
+    colorDomainMin: 0,
+    colorDomainMax: 100,
+    paletteId: "housing",
     noDataPolicy: "transparent",
   },
   {
@@ -222,7 +255,9 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     format: "percent1",
     domainMin: 0,
     domainMax: 57.89473684210527,
-    paletteId: "risk",
+    colorDomainMin: 0,
+    colorDomainMax: 100,
+    paletteId: "housing",
     noDataPolicy: "transparent",
   },
   {
@@ -234,7 +269,9 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     format: "score3",
     domainMin: 0,
     domainMax: 0.9769045884923524,
-    paletteId: "benefit",
+    colorDomainMin: 0,
+    colorDomainMax: 1,
+    paletteId: "adaptive",
     noDataPolicy: "transparent",
   },
   {
@@ -246,7 +283,9 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     format: "score3",
     domainMin: 0,
     domainMax: 0.9623840738043214,
-    paletteId: "benefit",
+    colorDomainMin: 0,
+    colorDomainMax: 1,
+    paletteId: "adaptive",
     noDataPolicy: "transparent",
   },
   {
@@ -258,7 +297,9 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     format: "score3",
     domainMin: 0,
     domainMax: 0.6710048679302096,
-    paletteId: "benefit",
+    colorDomainMin: 0,
+    colorDomainMax: 1,
+    paletteId: "adaptive",
     noDataPolicy: "transparent",
   },
   {
@@ -270,7 +311,9 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     format: "score3",
     domainMin: 0,
     domainMax: 0.2334325083523095,
-    paletteId: "benefit",
+    colorDomainMin: 0,
+    colorDomainMax: 1,
+    paletteId: "adaptive",
     noDataPolicy: "transparent",
   },
   {
@@ -282,7 +325,9 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     format: "score3",
     domainMin: 0,
     domainMax: 0.6209677419354839,
-    paletteId: "risk",
+    colorDomainMin: 0,
+    colorDomainMax: 1,
+    paletteId: "built",
     noDataPolicy: "transparent",
   },
   {
@@ -294,7 +339,9 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     format: "score3",
     domainMin: 0,
     domainMax: 0.3625834695630489,
-    paletteId: "risk",
+    colorDomainMin: 0,
+    colorDomainMax: 1,
+    paletteId: "built",
     noDataPolicy: "transparent",
   },
   {
@@ -306,7 +353,9 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     format: "score3",
     domainMin: 0,
     domainMax: 0.734375,
-    paletteId: "risk",
+    colorDomainMin: 0,
+    colorDomainMax: 1,
+    paletteId: "built",
     noDataPolicy: "transparent",
   },
   {
@@ -318,7 +367,9 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     format: "score3",
     domainMin: 0,
     domainMax: 1,
-    paletteId: "risk",
+    colorDomainMin: 0,
+    colorDomainMax: 1,
+    paletteId: "built",
     noDataPolicy: "transparent",
   },
 ] as const;

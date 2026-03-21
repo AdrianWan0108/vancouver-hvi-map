@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DA_METRICS_BY_ID } from "../../src/features/hvi-map/config/daMetrics";
+import { REGION_HVI_METRIC } from "../../src/features/hvi-map/config/regionConfig";
 import {
   DA_ZOOM_REGION_DIVIDER_CASING_STYLE,
   DA_ZOOM_REGION_DIVIDER_STYLE,
@@ -13,7 +14,7 @@ import {
 import { createInitialMapUiState } from "../../src/features/hvi-map/state/reducer";
 
 describe("map expressions", () => {
-  it("uses the density palette for population layers", () => {
+  it("uses the context palette and observed domain for population layers", () => {
     const expression = buildFillColorExpression(DA_METRICS_BY_ID.pop_total);
 
     expect(expression[0]).toBe("interpolate");
@@ -25,25 +26,61 @@ describe("map expressions", () => {
     expect(expression[3]).toBe(0);
     expect(expression[4]).toBe("#edf4ff");
     expect(expression[5]).toBe(4400);
-    expect(expression[6]).toBe("#5b7cfa");
+    expect(expression[6]).toBe("#6c8ef6");
     expect(expression[7]).toBe(8800);
-    expect(expression[8]).toBe("#1d3557");
+    expect(expression[8]).toBe("#1d4f8c");
   });
 
-  it("uses the benefit palette for greenness metrics", () => {
+  it("uses the adaptive palette and fixed 0-1 color domain for greenness metrics", () => {
     const expression = buildFillColorExpression(DA_METRICS_BY_ID.green_frac);
 
     expect(expression[3]).toBe(0);
     expect(expression[4]).toBe("#eef7e8");
-    expect(expression[7]).toBe(0.9769045884923524);
+    expect(expression[5]).toBe(0.5);
+    expect(expression[6]).toBe("#78a67e");
+    expect(expression[7]).toBe(1);
     expect(expression[8]).toBe("#1b4332");
   });
 
-  it("uses the risk palette for vulnerability metrics", () => {
+  it("uses the hvi palette and fixed 0-1 color domain for HVI metrics", () => {
     const expression = buildFillColorExpression(DA_METRICS_BY_ID.hvi_index_n01);
 
-    expect(expression[3]).toBe(0.06462950439663971);
+    expect(expression[3]).toBe(0);
     expect(expression[4]).toBe("#fff1d6");
+    expect(expression[5]).toBe(0.5);
+    expect(expression[6]).toBe("#f0a35f");
+    expect(expression[7]).toBe(1);
+    expect(expression[8]).toBe("#9b2226");
+  });
+
+  it("uses a fixed 0-100 color domain for percentage indicators", () => {
+    const expression = buildFillColorExpression(DA_METRICS_BY_ID.pct_renter);
+
+    expect(expression[3]).toBe(0);
+    expect(expression[4]).toBe("#fff0e7");
+    expect(expression[5]).toBe(50);
+    expect(expression[6]).toBe("#d88766");
+    expect(expression[7]).toBe(100);
+    expect(expression[8]).toBe("#934534");
+  });
+
+  it("keeps observed domains for temperature-based heat metrics", () => {
+    const expression = buildFillColorExpression(DA_METRICS_BY_ID.exposure_mean);
+
+    expect(expression[3]).toBe(17.54);
+    expect(expression[4]).toBe("#fff4de");
+    expect(expression[5]).toBeCloseTo(24.946);
+    expect(expression[6]).toBe("#e7a34d");
+    expect(expression[7]).toBe(32.352);
+    expect(expression[8]).toBe("#bb6a1e");
+  });
+
+  it("uses a fixed 0-1 color domain for regional HVI", () => {
+    const expression = buildFillColorExpression(REGION_HVI_METRIC);
+
+    expect(expression[3]).toBe(0);
+    expect(expression[4]).toBe("#fff1d6");
+    expect(expression[7]).toBe(1);
     expect(expression[8]).toBe("#9b2226");
   });
 

@@ -49,6 +49,10 @@ describe("DA component detail helpers", () => {
     ]);
 
     expect(cards[0].formula).toContain("0.67 * exposure_mean_n01 + 0.33 * hardscape_frac_n01");
+    expect(cards[0].previewSegments.map((segment) => segment.paletteId)).toEqual([
+      "heat",
+      "built",
+    ]);
     expect(cards[0].sections[0].rows.map((row) => row.metricId)).toEqual([
       "exposure_mean",
       "hardscape_frac",
@@ -60,6 +64,9 @@ describe("DA component detail helpers", () => {
     ]);
 
     expect(cards[1].notes).toContain("4 equal contributors");
+    expect(cards[1].previewSegments.every((segment) => segment.paletteId === "social")).toBe(
+      true
+    );
     expect(cards[1].sections[0].rows.map((row) => row.metricId)).toEqual([
       "unemployment_rate",
       "low_income_rate",
@@ -72,6 +79,12 @@ describe("DA component detail helpers", () => {
       "pct_renter",
       "pct_major_repairs",
       "pct_core_need",
+    ]);
+    expect(cards[2].previewSegments.map((segment) => segment.paletteId)).toEqual([
+      "adaptive",
+      "housing",
+      "housing",
+      "housing",
     ]);
     expect(cards[2].sections[1].rows.map((row) => row.metricId)).toEqual([
       "frac_coniferous",

@@ -75,8 +75,8 @@ const COMPONENT_SPECS: readonly ComponentSpec[] = [
     formula: "E = 0.67 * exposure_mean_n01 + 0.33 * hardscape_frac_n01",
     notes: ["67% temperature", "33% hardscape", DISPLAY_SCALING_NOTE],
     previewSegments: [
-      { label: "Temperature", weight: 0.67, paletteId: "risk" },
-      { label: "Hardscape", weight: 0.33, paletteId: "risk" },
+      { label: "Temperature", weight: 0.67, paletteId: "heat" },
+      { label: "Hardscape", weight: 0.33, paletteId: "built" },
     ],
     sections: [
       {
@@ -105,10 +105,10 @@ const COMPONENT_SPECS: readonly ComponentSpec[] = [
       "S = mean(unemployment_rate_n01, low_income_rate_n01, pct_seniors_65plus_n01, pct_living_alone_n01)",
     notes: ["4 equal contributors", DISPLAY_SCALING_NOTE],
     previewSegments: [
-      { label: "Unemployment", weight: 0.25, paletteId: "risk" },
-      { label: "Low income", weight: 0.25, paletteId: "risk" },
-      { label: "Seniors 65+", weight: 0.25, paletteId: "risk" },
-      { label: "Living alone", weight: 0.25, paletteId: "risk" },
+      { label: "Unemployment", weight: 0.25, paletteId: "social" },
+      { label: "Low income", weight: 0.25, paletteId: "social" },
+      { label: "Seniors 65+", weight: 0.25, paletteId: "social" },
+      { label: "Living alone", weight: 0.25, paletteId: "social" },
     ],
     sections: [
       {
@@ -131,10 +131,10 @@ const COMPONENT_SPECS: readonly ComponentSpec[] = [
       "A = mean(green_capacity_n01, renter_capacity_n01, major_repairs_capacity_n01, core_need_capacity_n01)",
     notes: ["4 equal contributors", DISPLAY_SCALING_NOTE],
     previewSegments: [
-      { label: "Green", weight: 0.25, paletteId: "benefit" },
-      { label: "Renters", weight: 0.25, paletteId: "risk" },
-      { label: "Repairs", weight: 0.25, paletteId: "risk" },
-      { label: "Core need", weight: 0.25, paletteId: "risk" },
+      { label: "Green", weight: 0.25, paletteId: "adaptive" },
+      { label: "Renters", weight: 0.25, paletteId: "housing" },
+      { label: "Repairs", weight: 0.25, paletteId: "housing" },
+      { label: "Core need", weight: 0.25, paletteId: "housing" },
     ],
     sections: [
       {

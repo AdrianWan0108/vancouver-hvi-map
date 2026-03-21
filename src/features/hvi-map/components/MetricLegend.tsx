@@ -17,8 +17,8 @@ interface MetricLegendProps {
   label: string;
   paletteId: MetricPaletteId;
   format: DaMetricFormatId;
-  domainMin: number;
-  domainMax: number;
+  colorDomainMin: number;
+  colorDomainMax: number;
   category?: DaMetricCategory | string;
   headerAction?: ReactNode;
 }
@@ -28,8 +28,8 @@ export default function MetricLegend({
   label,
   paletteId,
   format,
-  domainMin,
-  domainMax,
+  colorDomainMin,
+  colorDomainMax,
   category,
   headerAction,
 }: MetricLegendProps) {
@@ -64,8 +64,8 @@ export default function MetricLegend({
           }}
         />
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>{formatValueByFormat(format, domainMin)}</span>
-          <span>{formatValueByFormat(format, domainMax)}</span>
+          <span>{formatValueByFormat(format, colorDomainMin)}</span>
+          <span>{formatValueByFormat(format, colorDomainMax)}</span>
         </div>
         <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="meaning" className="border-border/70">

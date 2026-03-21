@@ -11,6 +11,8 @@ export interface RegionMetricConfig {
   format: DaMetricFormatId;
   domainMin: number;
   domainMax: number;
+  colorDomainMin: number;
+  colorDomainMax: number;
   paletteId: MetricPaletteId;
 }
 
@@ -20,7 +22,9 @@ export const REGION_HVI_METRIC: RegionMetricConfig = {
   format: "score3",
   domainMin: 0.13220740737301004,
   domainMax: 0.44369914336879274,
-  paletteId: "risk",
+  colorDomainMin: 0,
+  colorDomainMax: 1,
+  paletteId: "hvi",
 };
 
 export const PMTILES_FILES = {

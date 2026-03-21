@@ -76,8 +76,8 @@ export default function MapLegendOverlay() {
                 category={activeLegendCategory}
                 paletteId={activeLegendMetric.paletteId}
                 format={activeLegendMetric.format}
-                domainMin={activeLegendMetric.domainMin}
-                domainMax={activeLegendMetric.domainMax}
+                colorDomainMin={activeLegendMetric.colorDomainMin}
+                colorDomainMax={activeLegendMetric.colorDomainMax}
                 headerAction={
                   <CollapsibleTrigger asChild>
                     <Button
