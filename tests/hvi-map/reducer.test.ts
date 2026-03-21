@@ -92,6 +92,28 @@ describe("mapUiReducer", () => {
     expect(backToRegion.lockedDaRegionName).toBe("Metro Core");
   });
 
+  it("dedupes repeated hovered DA updates for the same feature and region", () => {
+    const da = makeDa("A");
+    const initial = createInitialMapUiState();
+    const inDaMode = mapUiReducer(initial, {
+      type: "zoomModeChanged",
+      zoomMode: "da",
+    });
+    const hovered = mapUiReducer(inDaMode, {
+      type: "hoveredDaChanged",
+      da,
+      regionName: "Metro Core",
+    });
+
+    const repeated = mapUiReducer(hovered, {
+      type: "hoveredDaChanged",
+      da: makeDa("A"),
+      regionName: "Metro Core",
+    });
+
+    expect(repeated).toBe(hovered);
+  });
+
   it("normalizes and clamps filter ranges", () => {
     const initial = createInitialMapUiState();
 
@@ -145,6 +167,22 @@ describe("mapUiReducer", () => {
     });
     expect(unlocked.lockedRegion).toBeNull();
     expect(unlocked.hoveredRegion?.FullName).toBe("Beta");
+  });
+
+  it("dedupes repeated hovered region updates for the same logical region", () => {
+    const region = makeRegion(1, "Alpha");
+    const initial = createInitialMapUiState();
+    const hovered = mapUiReducer(initial, {
+      type: "hoveredRegionChanged",
+      region,
+    });
+
+    const repeated = mapUiReducer(hovered, {
+      type: "hoveredRegionChanged",
+      region: makeRegion(1, "Alpha"),
+    });
+
+    expect(repeated).toBe(hovered);
   });
 
   it("preserves DA and region locks across zoom changes while clearing hover state", () => {

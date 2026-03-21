@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { SearchEntry, SearchIndex } from "../types/search";
 import { getSearchResults } from "../search";
-import { useMapState } from "../state/useMapState";
+import { useMapDispatch } from "../state/useMapDispatch";
 
 interface SearchOverlayProps {
   onSelectResult: (entry: SearchEntry) => void;
@@ -17,7 +17,7 @@ function ResultKindBadge({ kind }: { kind: SearchEntry["kind"] }) {
 }
 
 export default function SearchOverlay({ onSelectResult }: SearchOverlayProps) {
-  const { dispatch } = useMapState();
+  const dispatch = useMapDispatch();
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [searchIndex, setSearchIndex] = useState<SearchIndex | null>(null);

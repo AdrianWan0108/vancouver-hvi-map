@@ -5,7 +5,7 @@ import { Collapsible, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { DA_METRICS_BY_ID } from "../config/daMetrics";
 import { getPaletteConfig } from "../config/palettes";
 import { REGION_HVI_METRIC } from "../config/regionConfig";
-import { useMapState } from "../state/useMapState";
+import { useMapUiState } from "../state/useMapUiState";
 import MetricLegend from "./MetricLegend";
 
 function getLegendViewportMode() {
@@ -19,7 +19,7 @@ function getLegendViewportMode() {
 }
 
 export default function MapLegendOverlay() {
-  const { state } = useMapState();
+  const state = useMapUiState();
   const activeLegendMetric =
     state.zoomMode === "da"
       ? DA_METRICS_BY_ID[state.selectedMetric]

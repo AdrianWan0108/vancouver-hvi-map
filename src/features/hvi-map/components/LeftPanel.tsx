@@ -11,7 +11,7 @@ import {
   shouldShowDaControls,
   shouldShowViewOptions,
 } from "./panelContent";
-import { useMapState } from "../state/useMapState";
+import { useMemo } from "react";
 import {
   selectActiveDa,
   selectActiveDaRegionName,
@@ -19,10 +19,22 @@ import {
   selectIsLockedDaFilteredOut,
   selectPanelMode,
 } from "../state/selectors";
+import { useMapDispatch } from "../state/useMapDispatch";
+import { useMapHoverState } from "../state/useMapHoverState";
+import { useMapUiState } from "../state/useMapUiState";
 import { getRegionDisplayName } from "../utils/region";
 
 export default function LeftPanel() {
-  const { state, dispatch } = useMapState();
+  const uiState = useMapUiState();
+  const hoverState = useMapHoverState();
+  const dispatch = useMapDispatch();
+  const state = useMemo(
+    () => ({
+      ...uiState,
+      ...hoverState,
+    }),
+    [hoverState, uiState]
+  );
   const panelMode = selectPanelMode(state);
   const activeDa = selectActiveDa(state);
   const activeDaRegionName = selectActiveDaRegionName(state);
@@ -74,7 +86,7 @@ export default function LeftPanel() {
                         </AlertDescription>
                       </Alert>
                     ) : null}
-                    <DaDetailsSection key={activeDa.DGUID} da={activeDa} />
+                    <DaDetailsSection da={activeDa} />
                   </>
                 )}
               </>
