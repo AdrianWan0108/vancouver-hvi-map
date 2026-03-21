@@ -101,6 +101,26 @@ describe("DaDetailsSection", () => {
     expect(screen.queryByText("Hardscape breakdown")).not.toBeInTheDocument();
   });
 
+  it("keeps the open component stable when the hovered DA changes", () => {
+    const { rerender } = render(<DaDetailsSection da={da} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Exposure \(E\)/i }));
+    expect(screen.getByText("Primary inputs")).toBeInTheDocument();
+
+    rerender(
+      <DaDetailsSection
+        da={{
+          ...da,
+          DGUID: "2021S051259150689",
+          DAUID: "59150689",
+          exposure_index: 0.541,
+        }}
+      />
+    );
+
+    expect(screen.getByText("Primary inputs")).toBeInTheDocument();
+  });
+
   it("reveals the HVI summary note through the help tooltip", () => {
     render(<DaDetailsSection da={da} />);
 

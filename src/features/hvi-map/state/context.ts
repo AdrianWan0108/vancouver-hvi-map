@@ -1,11 +1,32 @@
 import { createContext, type Dispatch } from "react";
 import type { MapAction, MapUiState } from "../types/state";
 
-export interface MapStateContextValue {
-  state: MapUiState;
-  dispatch: Dispatch<MapAction>;
-}
+export type MapUiStateSlice = Pick<
+  MapUiState,
+  | "zoomMode"
+  | "lockedDa"
+  | "lockedDaRegionName"
+  | "lockedRegion"
+  | "selectedMetric"
+  | "filters"
+  | "isFilterMenuOpen"
+  | "showPeripheralAreas"
+  | "mapError"
+>;
 
-export const MapStateContext = createContext<MapStateContextValue | undefined>(
+export type MapHoverStateSlice = Pick<
+  MapUiState,
+  "hoveredDa" | "hoveredDaRegionName" | "hoveredRegion"
+>;
+
+export const MapUiStateContext = createContext<MapUiStateSlice | undefined>(
+  undefined
+);
+
+export const MapHoverStateContext = createContext<MapHoverStateSlice | undefined>(
+  undefined
+);
+
+export const MapDispatchContext = createContext<Dispatch<MapAction> | undefined>(
   undefined
 );

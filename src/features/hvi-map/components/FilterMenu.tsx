@@ -21,7 +21,8 @@ import {
   getFilterInputStep,
   isFilterRangeActive,
 } from "../state/filterRanges";
-import { useMapState } from "../state/useMapState";
+import { useMapDispatch } from "../state/useMapDispatch";
+import { useMapUiState } from "../state/useMapUiState";
 import type { DaFilterRange } from "../types/state";
 import { parseNumericInput } from "../utils/format";
 
@@ -150,7 +151,8 @@ function FilterRangeField({
 }
 
 export default function FilterMenu() {
-  const { state, dispatch } = useMapState();
+  const state = useMapUiState();
+  const dispatch = useMapDispatch();
 
   const groupedMetrics = useMemo(
     () =>

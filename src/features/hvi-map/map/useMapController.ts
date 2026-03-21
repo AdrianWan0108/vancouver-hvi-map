@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, type RefObject } from "react";
-import maplibregl, { Map } from "maplibre-gl";
+import maplibregl, { Map as MapLibreMap } from "maplibre-gl";
 import type { MapGeoJSONFeature, MapLayerMouseEvent, MapMouseEvent } from "maplibre-gl";
 import { PMTiles, Protocol } from "pmtiles";
 import { DA_METRICS_BY_ID, DEFAULT_DA_METRIC_ID } from "../config/daMetrics";
@@ -32,7 +32,27 @@ import { collapseCompactAttributionControl } from "./attribution";
 import { getFirstPlaceLabelLayerId } from "./layerPlacement";
 import { MAP_LAYERS, MAP_SOURCES, SOURCE_LAYERS } from "./layers";
 import { getPmtilesUrls } from "./sources";
-import { useMapState } from "../state/useMapState";
+import { useMapDispatch } from "../state/useMapDispatch";
+import { useMapUiState } from "../state/useMapUiState";
+
+interface TooltipContent {
+  title?: string;
+  label: string;
+  value: string;
+}
+
+interface TooltipDom {
+  wrapper: HTMLDivElement;
+  titleEl: HTMLDivElement;
+  labelEl: HTMLDivElement;
+  valueEl: HTMLDivElement;
+}
+
+interface HoverEventPayload {
+  feature: MapGeoJSONFeature;
+  point: MapMouseEvent["point"];
+  lngLat: MapMouseEvent["lngLat"];
+}
 
 function getFeatureId(feature: MapGeoJSONFeature): FeatureId | undefined {
   if (typeof feature.id === "string" || typeof feature.id === "number") {
@@ -65,7 +85,7 @@ function toRegionFeatureProperties(
 }
 
 function getRegionNameAtPoint(
-  map: Map,
+  map: MapLibreMap,
   point: MapMouseEvent["point"]
 ): string | null {
   const features = map.queryRenderedFeatures(point, {
@@ -79,36 +99,32 @@ function getTooltipMetricLabel(metricId: string, label: string): string {
   return metricId === DEFAULT_DA_METRIC_ID ? "HVI" : label;
 }
 
-function buildPopupContent({
-  title,
-  label,
-  value,
-}: {
-  title?: string;
-  label: string;
-  value: string;
-}): HTMLElement {
+function createPopupContentDom(): TooltipDom {
   const wrapper = document.createElement("div");
   wrapper.className = "map-tooltip";
 
-  if (title) {
-    const titleEl = document.createElement("div");
-    titleEl.className = "map-tooltip__title";
-    titleEl.textContent = title;
-    wrapper.appendChild(titleEl);
-  }
-
+  const titleEl = document.createElement("div");
+  titleEl.className = "map-tooltip__title";
+  titleEl.hidden = true;
+  wrapper.appendChild(titleEl);
   const labelEl = document.createElement("div");
   labelEl.className = "map-tooltip__label";
-  labelEl.textContent = label;
   wrapper.appendChild(labelEl);
-
   const valueEl = document.createElement("div");
   valueEl.className = "map-tooltip__value";
-  valueEl.textContent = value;
   wrapper.appendChild(valueEl);
 
-  return wrapper;
+  return { wrapper, titleEl, labelEl, valueEl };
+}
+
+function updatePopupContentDom(
+  dom: TooltipDom,
+  { title, label, value }: TooltipContent
+) {
+  dom.titleEl.hidden = !title;
+  dom.titleEl.textContent = title ?? "";
+  dom.labelEl.textContent = label;
+  dom.valueEl.textContent = value;
 }
 
 function toLngLatBounds(bounds: SearchBounds): [[number, number], [number, number]] {
@@ -119,9 +135,10 @@ function toLngLatBounds(bounds: SearchBounds): [[number, number], [number, numbe
 }
 
 export function useMapController(containerRef: RefObject<HTMLDivElement | null>) {
-  const { state, dispatch } = useMapState();
+  const state = useMapUiState();
+  const dispatch = useMapDispatch();
 
-  const mapRef = useRef<Map | null>(null);
+  const mapRef = useRef<MapLibreMap | null>(null);
   const tooltipRef = useRef<maplibregl.Popup | null>(null);
   const hoveredRegionIdRef = useRef<FeatureId | undefined>(undefined);
   const hoveredDaIdRef = useRef<FeatureId | undefined>(undefined);
@@ -168,14 +185,39 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
       closeOnClick: false,
       offset: 10,
     });
+    const tooltipDom = createPopupContentDom();
+    tooltip.setDOMContent(tooltipDom.wrapper);
+    const daRegionNameCache = new globalThis.Map<string, string | null>();
+    let currentTooltipKey: string | null = null;
+    let regionHoverRafId: number | null = null;
+    let daHoverRafId: number | null = null;
+    let hoverClearRafId: number | null = null;
+    let pendingRegionHover: HoverEventPayload | null = null;
+    let pendingDaHover: HoverEventPayload | null = null;
+    let pendingHoverClearPoint: MapMouseEvent["point"] | null = null;
 
     mapRef.current = map;
     tooltipRef.current = tooltip;
     requestAnimationFrame(collapseAttribution);
 
     const hideTooltip = () => {
+      currentTooltipKey = null;
       tooltip.remove();
       map.getCanvas().style.cursor = "";
+    };
+
+    const showTooltip = (
+      contentKey: string,
+      content: TooltipContent,
+      lngLat: MapMouseEvent["lngLat"]
+    ) => {
+      if (currentTooltipKey !== contentKey) {
+        updatePopupContentDom(tooltipDom, content);
+        currentTooltipKey = contentKey;
+      }
+
+      tooltip.setLngLat(lngLat).addTo(map);
+      map.getCanvas().style.cursor = "pointer";
     };
 
     const clearRegionHover = () => {
@@ -204,6 +246,181 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
         { hover: false }
       );
       hoveredDaIdRef.current = undefined;
+    };
+
+    const clearHoveredRegionState = () => {
+      pendingRegionHover = null;
+      if (regionHoverRafId !== null) {
+        window.cancelAnimationFrame(regionHoverRafId);
+        regionHoverRafId = null;
+      }
+      clearRegionHover();
+      hideTooltip();
+      if (!stateRef.current.lockedRegion) {
+        dispatch({ type: "hoveredRegionChanged", region: null });
+      }
+    };
+
+    const clearHoveredDaState = () => {
+      pendingDaHover = null;
+      if (daHoverRafId !== null) {
+        window.cancelAnimationFrame(daHoverRafId);
+        daHoverRafId = null;
+      }
+      clearDaHover();
+      hideTooltip();
+      if (!stateRef.current.lockedDa) {
+        dispatch({ type: "hoveredDaChanged", da: null, regionName: null });
+      }
+    };
+
+    const handleRegionHover = ({ feature, lngLat }: HoverEventPayload) => {
+      if (stateRef.current.zoomMode !== "region") return;
+
+      const featureId = getFeatureId(feature);
+      if (featureId === undefined) return;
+
+      const properties = toRegionFeatureProperties(feature);
+      if (!properties) return;
+
+      const regionName = getRegionDisplayName(properties) ?? undefined;
+      const score = formatScore(properties[REGION_HVI_METRIC.propertyKey]);
+
+      if (hoveredRegionIdRef.current !== featureId) {
+        clearRegionHover();
+        hoveredRegionIdRef.current = featureId;
+        map.setFeatureState(
+          {
+            source: MAP_SOURCES.regions,
+            sourceLayer: SOURCE_LAYERS.regions,
+            id: featureId,
+          },
+          { hover: true }
+        );
+
+        if (!stateRef.current.lockedRegion) {
+          dispatch({ type: "hoveredRegionChanged", region: properties });
+        }
+      }
+
+      showTooltip(
+        `region:${String(featureId)}`,
+        {
+          title: regionName,
+          label: REGION_HVI_METRIC.label,
+          value: score,
+        },
+        lngLat
+      );
+    };
+
+    const handleDaHover = ({ feature, point, lngLat }: HoverEventPayload) => {
+      if (stateRef.current.zoomMode !== "da") return;
+
+      const featureId = getFeatureId(feature);
+      if (featureId === undefined) return;
+
+      const da = toDaFeatureProperties(feature);
+      if (!da) return;
+
+      const metric = DA_METRICS_BY_ID[stateRef.current.selectedMetric];
+      const tooltipLabel = getTooltipMetricLabel(metric.id, metric.label);
+      const tooltipValue = formatMetricValue(metric, da[metric.propertyKey]);
+
+      if (hoveredDaIdRef.current !== featureId) {
+        clearDaHover();
+        hoveredDaIdRef.current = featureId;
+        map.setFeatureState(
+          {
+            source: MAP_SOURCES.da,
+            sourceLayer: SOURCE_LAYERS.da,
+            id: featureId,
+          },
+          { hover: true }
+        );
+
+        let regionName = daRegionNameCache.get(da.DGUID);
+        if (regionName === undefined) {
+          regionName = getRegionNameAtPoint(map, point);
+          daRegionNameCache.set(da.DGUID, regionName);
+        }
+
+        if (!stateRef.current.lockedDa) {
+          dispatch({ type: "hoveredDaChanged", da, regionName });
+        }
+      }
+
+      showTooltip(
+        `da:${da.DGUID}:${metric.id}`,
+        {
+          label: tooltipLabel,
+          value: tooltipValue,
+        },
+        lngLat
+      );
+    };
+
+    const scheduleRegionHover = (payload: HoverEventPayload) => {
+      pendingRegionHover = payload;
+      if (regionHoverRafId !== null) return;
+
+      regionHoverRafId = window.requestAnimationFrame(() => {
+        regionHoverRafId = null;
+        const nextPayload = pendingRegionHover;
+        pendingRegionHover = null;
+        if (!nextPayload) return;
+        handleRegionHover(nextPayload);
+      });
+    };
+
+    const scheduleDaHover = (payload: HoverEventPayload) => {
+      pendingDaHover = payload;
+      if (daHoverRafId !== null) return;
+
+      daHoverRafId = window.requestAnimationFrame(() => {
+        daHoverRafId = null;
+        const nextPayload = pendingDaHover;
+        pendingDaHover = null;
+        if (!nextPayload) return;
+        handleDaHover(nextPayload);
+      });
+    };
+
+    const scheduleHoverClearCheck = (point: MapMouseEvent["point"]) => {
+      pendingHoverClearPoint = point;
+      if (hoverClearRafId !== null) return;
+
+      hoverClearRafId = window.requestAnimationFrame(() => {
+        hoverClearRafId = null;
+        const nextPoint = pendingHoverClearPoint;
+        pendingHoverClearPoint = null;
+        if (!nextPoint) return;
+
+        const currentState = stateRef.current;
+        if (currentState.zoomMode === "region") {
+          if (currentState.lockedRegion || hoveredRegionIdRef.current === undefined) {
+            return;
+          }
+
+          const features = map.queryRenderedFeatures(nextPoint, {
+            layers: [MAP_LAYERS.regionsFill],
+          });
+
+          if (features.length === 0) {
+            clearHoveredRegionState();
+          }
+          return;
+        }
+
+        if (currentState.lockedDa || hoveredDaIdRef.current === undefined) return;
+
+        const features = map.queryRenderedFeatures(nextPoint, {
+          layers: [MAP_LAYERS.daFill],
+        });
+        if (features.length === 0) {
+          clearHoveredDaState();
+        }
+      });
     };
 
     const updateZoomMode = () => {
@@ -395,137 +612,41 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
       map.on("resize", collapseAttribution);
 
       map.on("mousemove", MAP_LAYERS.regionsFill, (event: MapLayerMouseEvent) => {
-        if (stateRef.current.zoomMode !== "region") return;
         const feature = event.features?.[0];
         if (!feature) return;
-
-        const featureId = getFeatureId(feature);
-        if (featureId === undefined) return;
-
-        if (hoveredRegionIdRef.current !== featureId) {
-          clearRegionHover();
-          hoveredRegionIdRef.current = featureId;
-          map.setFeatureState(
-            {
-              source: MAP_SOURCES.regions,
-              sourceLayer: SOURCE_LAYERS.regions,
-              id: featureId,
-            },
-            { hover: true }
-          );
-        }
-
-        const properties = toRegionFeatureProperties(feature);
-        const regionName = getRegionDisplayName(properties) ?? undefined;
-        const score = formatScore(properties?.[REGION_HVI_METRIC.propertyKey]);
-
-        if (properties && !stateRef.current.lockedRegion) {
-          dispatch({ type: "hoveredRegionChanged", region: properties });
-        }
-
-        tooltip
-          .setLngLat(event.lngLat)
-          .setDOMContent(
-            buildPopupContent({
-              title: regionName,
-              label: REGION_HVI_METRIC.label,
-              value: score,
-            })
-          )
-          .addTo(map);
-
-        map.getCanvas().style.cursor = "pointer";
+        scheduleRegionHover({
+          feature,
+          point: event.point,
+          lngLat: event.lngLat,
+        });
       });
 
       map.on("mouseleave", MAP_LAYERS.regionsFill, () => {
-        clearRegionHover();
-        hideTooltip();
-        if (!stateRef.current.lockedRegion) {
-          dispatch({ type: "hoveredRegionChanged", region: null });
-        }
+        clearHoveredRegionState();
       });
 
       map.on("mousemove", MAP_LAYERS.daFill, (event: MapLayerMouseEvent) => {
-        if (stateRef.current.zoomMode !== "da") return;
         const feature = event.features?.[0];
         if (!feature) return;
-
-        const featureId = getFeatureId(feature);
-        if (featureId === undefined) return;
-
-        if (hoveredDaIdRef.current !== featureId) {
-          clearDaHover();
-          hoveredDaIdRef.current = featureId;
-          map.setFeatureState(
-            {
-              source: MAP_SOURCES.da,
-              sourceLayer: SOURCE_LAYERS.da,
-              id: featureId,
-            },
-            { hover: true }
-          );
-        }
-
-        const da = toDaFeatureProperties(feature);
-        if (!da) return;
-        const regionName = getRegionNameAtPoint(map, event.point);
-
-        const metric = DA_METRICS_BY_ID[stateRef.current.selectedMetric];
-        const tooltipLabel = getTooltipMetricLabel(metric.id, metric.label);
-        const tooltipValue = formatMetricValue(metric, da[metric.propertyKey]);
-
-        tooltip
-          .setLngLat(event.lngLat)
-          .setDOMContent(
-            buildPopupContent({
-              label: tooltipLabel,
-              value: tooltipValue,
-            })
-          )
-          .addTo(map);
-
-        map.getCanvas().style.cursor = "pointer";
-
-        if (!stateRef.current.lockedDa) {
-          dispatch({ type: "hoveredDaChanged", da, regionName });
-        }
+        scheduleDaHover({
+          feature,
+          point: event.point,
+          lngLat: event.lngLat,
+        });
       });
 
       map.on("mouseleave", MAP_LAYERS.daFill, () => {
-        clearDaHover();
-        hideTooltip();
-        if (!stateRef.current.lockedDa) {
-          dispatch({ type: "hoveredDaChanged", da: null, regionName: null });
-        }
+        clearHoveredDaState();
       });
 
       map.on("mousemove", (event: MapMouseEvent) => {
-        const currentState = stateRef.current;
-        if (currentState.zoomMode === "region") {
-          if (currentState.lockedRegion) return;
-
-          const features = map.queryRenderedFeatures(event.point, {
-            layers: [MAP_LAYERS.regionsFill],
-          });
-
-          if (features.length === 0) {
-            clearRegionHover();
-            hideTooltip();
-            dispatch({ type: "hoveredRegionChanged", region: null });
-          }
+        if (
+          hoveredRegionIdRef.current === undefined &&
+          hoveredDaIdRef.current === undefined
+        ) {
           return;
         }
-
-        if (currentState.lockedDa) return;
-
-        const features = map.queryRenderedFeatures(event.point, {
-          layers: [MAP_LAYERS.daFill],
-        });
-        if (features.length === 0) {
-          clearDaHover();
-          hideTooltip();
-          dispatch({ type: "hoveredDaChanged", da: null, regionName: null });
-        }
+        scheduleHoverClearCheck(event.point);
       });
 
       map.on("click", MAP_LAYERS.regionsFill, (event: MapLayerMouseEvent) => {
@@ -553,6 +674,15 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
     });
 
     return () => {
+      if (regionHoverRafId !== null) {
+        window.cancelAnimationFrame(regionHoverRafId);
+      }
+      if (daHoverRafId !== null) {
+        window.cancelAnimationFrame(daHoverRafId);
+      }
+      if (hoverClearRafId !== null) {
+        window.cancelAnimationFrame(hoverClearRafId);
+      }
       tooltip.remove();
       map.remove();
       mapRef.current = null;

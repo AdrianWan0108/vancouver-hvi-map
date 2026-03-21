@@ -434,8 +434,8 @@ export default function DaDetailsSection({ da }: DaDetailsSectionProps) {
   const [openComponent, setOpenComponent] = useState<DaComponentId | null>(null);
   const isDesktop = useIsDesktop();
   const rootRef = useRef<HTMLDivElement>(null);
-  const summary = getDaHviSummaryDetail(da);
-  const components = getDaComponentDetailCards(da);
+  const summary = useMemo(() => getDaHviSummaryDetail(da), [da]);
+  const components = useMemo(() => getDaComponentDetailCards(da), [da]);
   const density = usePanelDensity({
     isDesktop,
     rootRef,

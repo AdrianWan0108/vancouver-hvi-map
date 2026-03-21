@@ -12,10 +12,12 @@ import {
 } from "@/components/ui/select";
 import { isDaMetricId } from "../config/daMetrics";
 import { getLayerMetricGroups } from "./layerOptions";
-import { useMapState } from "../state/useMapState";
+import { useMapDispatch } from "../state/useMapDispatch";
+import { useMapUiState } from "../state/useMapUiState";
 
 export default function LayerSelect() {
-  const { state, dispatch } = useMapState();
+  const state = useMapUiState();
+  const dispatch = useMapDispatch();
   const layerGroups = getLayerMetricGroups();
 
   return (

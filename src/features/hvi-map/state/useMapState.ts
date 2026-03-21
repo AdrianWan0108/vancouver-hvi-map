@@ -1,10 +1,22 @@
-import { useContext } from "react";
-import { MapStateContext } from "./context";
+import { useMemo } from "react";
+import { useMapDispatch } from "./useMapDispatch";
+import { useMapHoverState } from "./useMapHoverState";
+import { useMapUiState } from "./useMapUiState";
+import type { MapUiState } from "../types/state";
 
 export function useMapState() {
-  const context = useContext(MapStateContext);
-  if (!context) {
-    throw new Error("useMapState must be used within MapStateProvider.");
-  }
-  return context;
+  const uiState = useMapUiState();
+  const hoverState = useMapHoverState();
+  const dispatch = useMapDispatch();
+
+  return useMemo(
+    () => ({
+      state: {
+        ...uiState,
+        ...hoverState,
+      } as MapUiState,
+      dispatch,
+    }),
+    [dispatch, hoverState, uiState]
+  );
 }

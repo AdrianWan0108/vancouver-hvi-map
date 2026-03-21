@@ -61,10 +61,19 @@ export function mapUiReducer(state: MapUiState, action: MapAction): MapUiState {
     }
     case "hoveredDaChanged": {
       if (state.lockedDa) return state;
+      const nextRegionName = action.regionName ?? null;
+      const currentDguid = state.hoveredDa?.DGUID ?? null;
+      const nextDguid = action.da?.DGUID ?? null;
+      if (
+        currentDguid === nextDguid &&
+        state.hoveredDaRegionName === nextRegionName
+      ) {
+        return state;
+      }
       return {
         ...state,
         hoveredDa: action.da,
-        hoveredDaRegionName: action.regionName ?? null,
+        hoveredDaRegionName: nextRegionName,
       };
     }
     case "daClicked": {
@@ -92,6 +101,13 @@ export function mapUiReducer(state: MapUiState, action: MapAction): MapUiState {
     }
     case "hoveredRegionChanged": {
       if (state.lockedRegion) return state;
+      const currentRegionKey = state.hoveredRegion
+        ? getRegionKey(state.hoveredRegion)
+        : null;
+      const nextRegionKey = action.region ? getRegionKey(action.region) : null;
+      if (currentRegionKey === nextRegionKey) {
+        return state;
+      }
       return { ...state, hoveredRegion: action.region };
     }
     case "regionClicked": {

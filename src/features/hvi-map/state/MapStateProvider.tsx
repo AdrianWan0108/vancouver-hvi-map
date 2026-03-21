@@ -1,6 +1,10 @@
 import { useMemo, useReducer, type ReactNode } from "react";
 import { createInitialMapUiState, mapUiReducer } from "./reducer";
-import { MapStateContext } from "./context";
+import {
+  MapDispatchContext,
+  MapHoverStateContext,
+  MapUiStateContext,
+} from "./context";
 
 interface MapStateProviderProps {
   children: ReactNode;
@@ -9,13 +13,47 @@ interface MapStateProviderProps {
 export function MapStateProvider({ children }: MapStateProviderProps) {
   const [state, dispatch] = useReducer(mapUiReducer, undefined, createInitialMapUiState);
 
-  const value = useMemo(
+  const uiState = useMemo(
     () => ({
-      state,
-      dispatch,
+      zoomMode: state.zoomMode,
+      lockedDa: state.lockedDa,
+      lockedDaRegionName: state.lockedDaRegionName,
+      lockedRegion: state.lockedRegion,
+      selectedMetric: state.selectedMetric,
+      filters: state.filters,
+      isFilterMenuOpen: state.isFilterMenuOpen,
+      showPeripheralAreas: state.showPeripheralAreas,
+      mapError: state.mapError,
     }),
-    [state]
+    [
+      state.zoomMode,
+      state.lockedDa,
+      state.lockedDaRegionName,
+      state.lockedRegion,
+      state.selectedMetric,
+      state.filters,
+      state.isFilterMenuOpen,
+      state.showPeripheralAreas,
+      state.mapError,
+    ]
   );
 
-  return <MapStateContext.Provider value={value}>{children}</MapStateContext.Provider>;
+  const hoverState = useMemo(
+    () => ({
+      hoveredDa: state.hoveredDa,
+      hoveredDaRegionName: state.hoveredDaRegionName,
+      hoveredRegion: state.hoveredRegion,
+    }),
+    [state.hoveredDa, state.hoveredDaRegionName, state.hoveredRegion]
+  );
+
+  return (
+    <MapDispatchContext.Provider value={dispatch}>
+      <MapUiStateContext.Provider value={uiState}>
+        <MapHoverStateContext.Provider value={hoverState}>
+          {children}
+        </MapHoverStateContext.Provider>
+      </MapUiStateContext.Provider>
+    </MapDispatchContext.Provider>
+  );
 }
