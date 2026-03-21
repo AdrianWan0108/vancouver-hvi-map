@@ -1,4 +1,6 @@
+@import url("https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=Public+Sans:wght@400;500;600;700&family=Space+Grotesque:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
+@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -10,7 +12,10 @@ body,
 }
 
 :root {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans-system: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  --font-sans: var(--font-sans-system);
+  font-family: var(--font-sans);
   line-height: 1.5;
   font-weight: 400;
   font-synthesis: none;
@@ -94,6 +99,7 @@ body,
 
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-sans);
     min-width: 320px;
   }
 
@@ -117,14 +123,26 @@ body,
 }
 
 .map-tooltip {
-  min-width: 8rem;
+  display: grid;
+  justify-items: center;
+  gap: 0.2rem;
+  min-width: 9rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: color-mix(in oklab, var(--popover) 94%, transparent);
   color: var(--popover-foreground);
   box-shadow: 0 10px 30px rgb(15 23 42 / 0.16);
   padding: 0.625rem 0.75rem;
+  text-align: center;
   backdrop-filter: blur(10px);
+}
+
+.map-tooltip__title {
+  color: var(--popover-foreground);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  margin-bottom: 0.1rem;
 }
 
 .map-tooltip__label {
@@ -133,13 +151,13 @@ body,
   font-weight: 600;
   letter-spacing: 0.08em;
   line-height: 1.1;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.05rem;
   text-transform: uppercase;
 }
 
 .map-tooltip__value {
   color: var(--popover-foreground);
-  font-size: 0.875rem;
-  font-weight: 600;
-  line-height: 1.2;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.1;
 }

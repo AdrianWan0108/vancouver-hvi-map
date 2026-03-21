@@ -1,116 +1,116 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import FilterMenu from "./FilterMenu";
 import LayerSelect from "./LayerSelect";
 import InfoModeSection from "./InfoModeSection";
 import DaDetailsSection from "./DaDetailsSection";
+import RegionDetailsSection from "./RegionDetailsSection";
+import ViewOptionsSection from "./ViewOptionsSection";
+import FontPreviewSection from "./FontPreviewSection";
+import {
+  getPanelHeaderContent,
+  shouldShowDaControls,
+  shouldShowViewOptions,
+} from "./panelContent";
 import { useMapState } from "../state/useMapState";
 import {
   selectActiveDa,
+  selectActiveDaRegionName,
+  selectActiveRegion,
   selectIsLockedDaFilteredOut,
   selectPanelMode,
 } from "../state/selectors";
-
-function getPanelTitle(
-  panelMode: ReturnType<typeof selectPanelMode>,
-  activeDaDguid: string | null
-): string {
-  if (panelMode === "locked" && activeDaDguid) return `Locked DA: ${activeDaDguid}`;
-  if (panelMode === "hover" && activeDaDguid) return `Hovering DA: ${activeDaDguid}`;
-  return "DA Details";
-}
+import { getRegionDisplayName } from "../utils/region";
 
 export default function LeftPanel() {
   const { state, dispatch } = useMapState();
   const panelMode = selectPanelMode(state);
   const activeDa = selectActiveDa(state);
+  const activeDaRegionName = selectActiveDaRegionName(state);
+  const activeRegion = selectActiveRegion(state);
   const lockedDaFilteredOut = selectIsLockedDaFilteredOut(state);
-  const panelTitle = getPanelTitle(panelMode, activeDa?.DGUID ?? null);
+  const activeRegionName = getRegionDisplayName(activeRegion);
+  const headerContent = getPanelHeaderContent({
+    zoomMode: state.zoomMode,
+    activeDaDauid: activeDa?.DAUID ?? null,
+    activeDaRegionName,
+    activeRegionName,
+  });
 
   return (
-    <aside className="absolute left-4 top-4 z-10 w-[min(24rem,calc(100vw-2rem))]">
-      <Card className="h-[calc(100vh-2rem)] overflow-hidden border-border/80 bg-card/95 shadow-lg backdrop-blur-sm">
-        <CardHeader className="gap-3 px-5 py-4">
-          <div className="flex items-center gap-2">
-            <Badge variant={panelMode === "locked" ? "default" : "secondary"}>
-              {panelMode === "locked"
-                ? "Locked"
-                : panelMode === "hover"
-                  ? "Hover"
-                  : state.zoomMode === "region"
-                    ? "Region"
-                    : "Info"}
-            </Badge>
-            {state.zoomMode === "da" ? (
-              <Badge variant="outline">DA Mode</Badge>
+    <aside className="flex h-full min-h-0 w-full flex-col border-b border-border/80 bg-card md:w-[24rem] md:flex-none md:border-r md:border-b-0">
+      <div className="border-b border-border/80 px-5 py-4">
+        <h1 className="text-base font-semibold">{headerContent.title}</h1>
+        {headerContent.subtitle ? (
+          <p className="mt-1 text-sm text-muted-foreground">
+            {headerContent.subtitle}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div
+          data-hvi-panel-scroll="true"
+          className="min-h-0 flex-1 overflow-auto px-5 py-4"
+        >
+          <div className="grid gap-4">
+            {state.mapError ? (
+              <Alert variant="destructive">
+                <AlertTitle>Map warning</AlertTitle>
+                <AlertDescription>{state.mapError}</AlertDescription>
+              </Alert>
+            ) : null}
+
+            {shouldShowDaControls(state.zoomMode) ? (
+              <>
+                {panelMode === "info" || !activeDa ? (
+                  <InfoModeSection zoomMode={state.zoomMode} />
+                ) : (
+                  <>
+                    {lockedDaFilteredOut ? (
+                      <Alert variant="warning">
+                        <AlertTitle>Filtered out</AlertTitle>
+                        <AlertDescription>
+                          Locked DA is currently outside active filter range.
+                        </AlertDescription>
+                      </Alert>
+                    ) : null}
+                    <DaDetailsSection key={activeDa.DGUID} da={activeDa} />
+                  </>
+                )}
+              </>
+            ) : panelMode === "info" || !activeRegion ? (
+              <InfoModeSection zoomMode={state.zoomMode} />
             ) : (
-              <Badge variant="outline">Region Mode</Badge>
+              <RegionDetailsSection region={activeRegion} />
             )}
-          </div>
-          <CardTitle className="text-base">{panelTitle}</CardTitle>
-          <CardDescription>
-            Heat vulnerability explorer for Vancouver dissemination areas and
-            regional summaries.
-          </CardDescription>
-          {panelMode === "locked" ? (
-            <CardAction>
-              <Button
-                type="button"
-                variant="outline"
-                size="xs"
-                onClick={() => dispatch({ type: "unlockDa" })}
-                title="Unlock panel"
-              >
-                Unlock
-              </Button>
-            </CardAction>
-          ) : null}
-        </CardHeader>
 
-        <Separator />
-
-        <CardContent className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto px-5 py-4">
-          {state.mapError ? (
-            <Alert variant="destructive">
-              <AlertTitle>Map warning</AlertTitle>
-              <AlertDescription>{state.mapError}</AlertDescription>
-            </Alert>
-          ) : null}
-
-          {panelMode === "info" || !activeDa ? (
-            <div className="flex min-h-0 flex-1">
-              <InfoModeSection
+            {shouldShowViewOptions(state.zoomMode) ? (
+              <ViewOptionsSection
                 zoomMode={state.zoomMode}
-                hasLockedDa={Boolean(state.lockedDa)}
+                showPeripheralAreas={state.showPeripheralAreas}
+                onShowPeripheralAreasChange={(showPeripheralAreas) =>
+                  dispatch({
+                    type: "peripheralVisibilityChanged",
+                    showPeripheralAreas,
+                  })
+                }
               />
-            </div>
-          ) : (
-            <>
-              <LayerSelect />
-              <FilterMenu />
-              {lockedDaFilteredOut ? (
-                <Alert variant="warning">
-                  <AlertTitle>Filtered out</AlertTitle>
-                  <AlertDescription>
-                    Locked DA is currently outside active filter range.
-                  </AlertDescription>
-                </Alert>
-              ) : null}
-              <DaDetailsSection da={activeDa} selectedMetric={state.selectedMetric} />
-            </>
-          )}
-        </CardContent>
-      </Card>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="shrink-0 border-t border-border/80 px-5 py-4">
+          <div className="grid gap-4">
+            {shouldShowDaControls(state.zoomMode) ? (
+              <>
+                <LayerSelect />
+                <FilterMenu />
+              </>
+            ) : null}
+            <FontPreviewSection />
+          </div>
+        </div>
+      </div>
     </aside>
   );
 }

@@ -6,33 +6,39 @@ export interface FeatureProperties {
 
 export interface DaFeatureProperties extends FeatureProperties {
   DGUID: string;
-  pop_total?: number;
-  unemployment_rate?: number;
-  low_income_rate?: number;
-  seniors_65plus_count?: number;
-  living_alone_count?: number;
-  pct_seniors_65plus?: number;
-  pct_living_alone?: number;
-  unemployment_rate_n01?: number;
-  low_income_rate_n01?: number;
-  pct_seniors_65plus_n01?: number;
-  pct_living_alone_n01?: number;
-  sensitivity_index?: number;
+  DAUID: string;
   adaptive_capacity_index?: number;
-  green_frac?: number;
+  exposure_index?: number;
+  exposure_mean?: number;
+  frac_buildings?: number;
   frac_coniferous?: number;
   frac_deciduous?: number;
+  frac_other_built?: number;
+  frac_paved?: number;
   frac_shrub?: number;
-  frac_modified_herb?: number;
-  frac_natural_herb?: number;
-  exposure_mean?: number;
-  hvi_raw?: number;
-  hvi_index_n01?: number;
-  has_sensitivity?: boolean;
+  green_frac?: number;
+  hardscape_frac?: number;
   has_adaptive?: boolean;
   has_exposure?: boolean;
+  has_sensitivity?: boolean;
   hvi_complete?: boolean;
-  exposure_index?: number;
+  hvi_index_n01?: number;
+  hvi_raw?: number;
+  living_alone_count?: number;
+  low_income_rate?: number;
+  low_income_rate_n01?: number;
+  pct_core_need?: number;
+  pct_living_alone?: number;
+  pct_living_alone_n01?: number;
+  pct_major_repairs?: number;
+  pct_renter?: number;
+  pct_seniors_65plus?: number;
+  pct_seniors_65plus_n01?: number;
+  pop_total?: number;
+  seniors_65plus_count?: number;
+  sensitivity_index?: number;
+  unemployment_rate?: number;
+  unemployment_rate_n01?: number;
 }
 
 export interface RegionFeatureProperties extends FeatureProperties {

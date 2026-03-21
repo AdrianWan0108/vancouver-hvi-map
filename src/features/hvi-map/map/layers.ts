@@ -11,6 +11,10 @@ export const SOURCE_LAYERS = {
 export const MAP_LAYERS = {
   regionsFill: "regions-fill",
   regionsLine: "regions-line",
+  regionsLineDaCasing: "regions-line-da-casing",
+  regionsLineDa: "regions-line-da",
+  regionsLookup: "regions-lookup",
   daFill: "da-fill",
   daLine: "da-line",
+  daLockedLine: "da-locked-line",
 } as const;

@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { createInitialMapUiState, mapUiReducer } from "../../src/features/hvi-map/state/reducer";
 import {
   selectActiveDa,
+  selectActiveDaRegionName,
+  selectActiveRegion,
   selectIsLockedDaFilteredOut,
   selectPanelMode,
 } from "../../src/features/hvi-map/state/selectors";
@@ -11,16 +13,33 @@ describe("selectors", () => {
     const initial = createInitialMapUiState();
     expect(selectPanelMode(initial)).toBe("info");
 
-    const inDa = mapUiReducer(initial, { type: "zoomModeChanged", zoomMode: "da" });
+    const hoveredRegion = mapUiReducer(initial, {
+      type: "hoveredRegionChanged",
+      region: { MunNum: 1, FullName: "Alpha" },
+    });
+    expect(selectPanelMode(hoveredRegion)).toBe("hover");
+
+    const lockedRegion = mapUiReducer(hoveredRegion, {
+      type: "regionClicked",
+      region: { MunNum: 1, FullName: "Alpha" },
+    });
+    expect(selectPanelMode(lockedRegion)).toBe("locked");
+
+    const inDa = mapUiReducer(lockedRegion, {
+      type: "zoomModeChanged",
+      zoomMode: "da",
+    });
     const hovered = mapUiReducer(inDa, {
       type: "hoveredDaChanged",
-      da: { DGUID: "A" },
+      da: { DGUID: "A", DAUID: "A" },
+      regionName: "Metro Core",
     });
     expect(selectPanelMode(hovered)).toBe("hover");
 
     const locked = mapUiReducer(hovered, {
       type: "daClicked",
-      da: { DGUID: "A" },
+      da: { DGUID: "A", DAUID: "A" },
+      regionName: "Metro Core",
     });
     expect(selectPanelMode(locked)).toBe("locked");
   });
@@ -30,15 +49,33 @@ describe("selectors", () => {
     const inDa = mapUiReducer(initial, { type: "zoomModeChanged", zoomMode: "da" });
     const hovered = mapUiReducer(inDa, {
       type: "hoveredDaChanged",
-      da: { DGUID: "A" },
+      da: { DGUID: "A", DAUID: "A" },
+      regionName: "Metro Core",
     });
     expect(selectActiveDa(hovered)?.DGUID).toBe("A");
+    expect(selectActiveDaRegionName(hovered)).toBe("Metro Core");
 
     const inRegion = mapUiReducer(hovered, {
       type: "zoomModeChanged",
       zoomMode: "region",
     });
     expect(selectActiveDa(inRegion)).toBeNull();
+    expect(selectActiveDaRegionName(inRegion)).toBeNull();
+  });
+
+  it("returns active region only in region zoom mode", () => {
+    const initial = createInitialMapUiState();
+    const hovered = mapUiReducer(initial, {
+      type: "hoveredRegionChanged",
+      region: { MunNum: 1, FullName: "Alpha" },
+    });
+    expect(selectActiveRegion(hovered)?.FullName).toBe("Alpha");
+
+    const inDa = mapUiReducer(hovered, {
+      type: "zoomModeChanged",
+      zoomMode: "da",
+    });
+    expect(selectActiveRegion(inDa)).toBeNull();
   });
 
   it("flags locked DA as filtered out when outside active filter", () => {
@@ -46,7 +83,7 @@ describe("selectors", () => {
     const inDa = mapUiReducer(initial, { type: "zoomModeChanged", zoomMode: "da" });
     const locked = mapUiReducer(inDa, {
       type: "daClicked",
-      da: { DGUID: "A", hvi_index_n01: 0.2 },
+      da: { DGUID: "A", DAUID: "A", hvi_index_n01: 0.2 },
     });
     const filtered = mapUiReducer(locked, {
       type: "filterRangeChanged",

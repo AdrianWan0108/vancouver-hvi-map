@@ -11,28 +11,40 @@ export const DA_METRIC_IDS = [
   "low_income_rate",
   "pct_seniors_65plus",
   "pct_living_alone",
+  "pct_renter",
+  "pct_core_need",
+  "pct_major_repairs",
   "green_frac",
   "frac_coniferous",
   "frac_deciduous",
   "frac_shrub",
-  "frac_modified_herb",
-  "frac_natural_herb",
+  "frac_buildings",
+  "frac_other_built",
+  "frac_paved",
+  "hardscape_frac",
 ] as const;
 
 export type DaMetricId = (typeof DA_METRIC_IDS)[number];
-export type DaMetricPaletteId = "orange-green";
+export type MetricPaletteId =
+  | "hvi"
+  | "heat"
+  | "social"
+  | "housing"
+  | "adaptive"
+  | "context"
+  | "built";
 export type DaMetricCategory =
   | "HVI"
   | "Exposure"
-  | "Socioeconomic"
   | "Population"
-  | "Greenness";
-export type DaMetricValueType =
-  | "index"
-  | "ratio"
-  | "percentage"
-  | "count"
-  | "number";
+  | "Social & Housing"
+  | "Land Cover & Built";
+export type DaFilterGroup =
+  | "hvi"
+  | "exposure"
+  | "sensitivity"
+  | "adaptiveCapacity"
+  | "population";
 export type DaMetricFormatId =
   | "score3"
   | "percent1"
@@ -45,13 +57,23 @@ export interface DaMetricConfig {
   propertyKey: Extract<keyof DaFeatureProperties, string>;
   label: string;
   category: DaMetricCategory;
-  valueType: DaMetricValueType;
-  defaultMin: number | null;
-  defaultMax: number | null;
+  filterGroup: DaFilterGroup;
   format: DaMetricFormatId;
-  paletteId: DaMetricPaletteId;
+  domainMin: number;
+  domainMax: number;
+  colorDomainMin: number;
+  colorDomainMax: number;
+  paletteId: MetricPaletteId;
   noDataPolicy: NoDataPolicy;
 }
+
+export const DA_FILTER_GROUPS = [
+  { id: "hvi", label: "HVI" },
+  { id: "exposure", label: "Exposure" },
+  { id: "sensitivity", label: "Sensitivity" },
+  { id: "adaptiveCapacity", label: "Adaptive Capacity" },
+  { id: "population", label: "Population" },
+] as const satisfies readonly { id: DaFilterGroup; label: string }[];
 
 export const DEFAULT_DA_METRIC_ID: DaMetricId = "hvi_index_n01";
 
@@ -61,11 +83,13 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     propertyKey: "hvi_index_n01",
     label: "HVI (0-1)",
     category: "HVI",
-    valueType: "index",
-    defaultMin: 0,
-    defaultMax: 1,
+    filterGroup: "hvi",
     format: "score3",
-    paletteId: "orange-green",
+    domainMin: 0.06462950439663971,
+    domainMax: 0.733616020899424,
+    colorDomainMin: 0,
+    colorDomainMax: 1,
+    paletteId: "hvi",
     noDataPolicy: "transparent",
   },
   {
@@ -73,11 +97,13 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     propertyKey: "sensitivity_index",
     label: "Sensitivity Index",
     category: "HVI",
-    valueType: "index",
-    defaultMin: 0,
-    defaultMax: 1,
+    filterGroup: "sensitivity",
     format: "score3",
-    paletteId: "orange-green",
+    domainMin: 0,
+    domainMax: 0.7991342281879195,
+    colorDomainMin: 0,
+    colorDomainMax: 1,
+    paletteId: "social",
     noDataPolicy: "transparent",
   },
   {
@@ -85,11 +111,13 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     propertyKey: "adaptive_capacity_index",
     label: "Adaptive Capacity Index",
     category: "HVI",
-    valueType: "index",
-    defaultMin: 0,
-    defaultMax: 1,
+    filterGroup: "adaptiveCapacity",
     format: "score3",
-    paletteId: "orange-green",
+    domainMin: 0.0091336884032457,
+    domainMax: 1,
+    colorDomainMin: 0,
+    colorDomainMax: 1,
+    paletteId: "adaptive",
     noDataPolicy: "transparent",
   },
   {
@@ -97,11 +125,13 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     propertyKey: "exposure_index",
     label: "Exposure Index",
     category: "Exposure",
-    valueType: "index",
-    defaultMin: 0,
-    defaultMax: 1,
+    filterGroup: "exposure",
     format: "score3",
-    paletteId: "orange-green",
+    domainMin: 0,
+    domainMax: 0.9705087479648702,
+    colorDomainMin: 0,
+    colorDomainMax: 1,
+    paletteId: "heat",
     noDataPolicy: "transparent",
   },
   {
@@ -109,11 +139,13 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     propertyKey: "exposure_mean",
     label: "Exposure Mean (deg C)",
     category: "Exposure",
-    valueType: "number",
-    defaultMin: 20,
-    defaultMax: 40,
+    filterGroup: "exposure",
     format: "number2",
-    paletteId: "orange-green",
+    domainMin: 17.54,
+    domainMax: 32.352,
+    colorDomainMin: 17.54,
+    colorDomainMax: 32.352,
+    paletteId: "heat",
     noDataPolicy: "transparent",
   },
   {
@@ -121,153 +153,230 @@ export const DA_METRICS: readonly DaMetricConfig[] = [
     propertyKey: "pop_total",
     label: "Population",
     category: "Population",
-    valueType: "count",
-    defaultMin: 0,
-    defaultMax: 5000,
+    filterGroup: "population",
     format: "integer",
-    paletteId: "orange-green",
+    domainMin: 0,
+    domainMax: 8800,
+    colorDomainMin: 0,
+    colorDomainMax: 8800,
+    paletteId: "context",
     noDataPolicy: "transparent",
   },
   {
     id: "unemployment_rate",
     propertyKey: "unemployment_rate",
     label: "Unemployment Rate (%)",
-    category: "Socioeconomic",
-    valueType: "percentage",
-    defaultMin: 0,
-    defaultMax: 30,
+    category: "Social & Housing",
+    filterGroup: "sensitivity",
     format: "percent1",
-    paletteId: "orange-green",
+    domainMin: 0,
+    domainMax: 50,
+    colorDomainMin: 0,
+    colorDomainMax: 100,
+    paletteId: "social",
     noDataPolicy: "transparent",
   },
   {
     id: "low_income_rate",
     propertyKey: "low_income_rate",
     label: "Low Income Rate (%)",
-    category: "Socioeconomic",
-    valueType: "percentage",
-    defaultMin: 0,
-    defaultMax: 50,
+    category: "Social & Housing",
+    filterGroup: "sensitivity",
     format: "percent1",
-    paletteId: "orange-green",
+    domainMin: 1.4,
+    domainMax: 61,
+    colorDomainMin: 0,
+    colorDomainMax: 100,
+    paletteId: "social",
     noDataPolicy: "transparent",
   },
   {
     id: "pct_seniors_65plus",
     propertyKey: "pct_seniors_65plus",
     label: "% Seniors 65+",
-    category: "Socioeconomic",
-    valueType: "percentage",
-    defaultMin: 0,
-    defaultMax: 50,
+    category: "Social & Housing",
+    filterGroup: "sensitivity",
     format: "percent1",
-    paletteId: "orange-green",
+    domainMin: 0.7824726134585289,
+    domainMax: 65.44502617801047,
+    colorDomainMin: 0,
+    colorDomainMax: 100,
+    paletteId: "social",
     noDataPolicy: "transparent",
   },
   {
     id: "pct_living_alone",
     propertyKey: "pct_living_alone",
     label: "% Living Alone",
-    category: "Socioeconomic",
-    valueType: "percentage",
-    defaultMin: 0,
-    defaultMax: 50,
+    category: "Social & Housing",
+    filterGroup: "sensitivity",
     format: "percent1",
-    paletteId: "orange-green",
+    domainMin: 0,
+    domainMax: 57.59162303664922,
+    colorDomainMin: 0,
+    colorDomainMax: 100,
+    paletteId: "social",
+    noDataPolicy: "transparent",
+  },
+  {
+    id: "pct_renter",
+    propertyKey: "pct_renter",
+    label: "% Renters",
+    category: "Social & Housing",
+    filterGroup: "adaptiveCapacity",
+    format: "percent1",
+    domainMin: 0,
+    domainMax: 100,
+    colorDomainMin: 0,
+    colorDomainMax: 100,
+    paletteId: "housing",
+    noDataPolicy: "transparent",
+  },
+  {
+    id: "pct_core_need",
+    propertyKey: "pct_core_need",
+    label: "% Core Housing Need",
+    category: "Social & Housing",
+    filterGroup: "adaptiveCapacity",
+    format: "percent1",
+    domainMin: 0,
+    domainMax: 75,
+    colorDomainMin: 0,
+    colorDomainMax: 100,
+    paletteId: "housing",
+    noDataPolicy: "transparent",
+  },
+  {
+    id: "pct_major_repairs",
+    propertyKey: "pct_major_repairs",
+    label: "% Major Repairs",
+    category: "Social & Housing",
+    filterGroup: "adaptiveCapacity",
+    format: "percent1",
+    domainMin: 0,
+    domainMax: 57.89473684210527,
+    colorDomainMin: 0,
+    colorDomainMax: 100,
+    paletteId: "housing",
     noDataPolicy: "transparent",
   },
   {
     id: "green_frac",
     propertyKey: "green_frac",
     label: "Green Fraction",
-    category: "Greenness",
-    valueType: "ratio",
-    defaultMin: 0,
-    defaultMax: 1,
+    category: "Land Cover & Built",
+    filterGroup: "adaptiveCapacity",
     format: "score3",
-    paletteId: "orange-green",
+    domainMin: 0,
+    domainMax: 0.9769045884923524,
+    colorDomainMin: 0,
+    colorDomainMax: 1,
+    paletteId: "adaptive",
     noDataPolicy: "transparent",
   },
   {
     id: "frac_coniferous",
     propertyKey: "frac_coniferous",
     label: "Coniferous Fraction",
-    category: "Greenness",
-    valueType: "ratio",
-    defaultMin: 0,
-    defaultMax: 1,
+    category: "Land Cover & Built",
+    filterGroup: "adaptiveCapacity",
     format: "score3",
-    paletteId: "orange-green",
+    domainMin: 0,
+    domainMax: 0.9623840738043214,
+    colorDomainMin: 0,
+    colorDomainMax: 1,
+    paletteId: "adaptive",
     noDataPolicy: "transparent",
   },
   {
     id: "frac_deciduous",
     propertyKey: "frac_deciduous",
     label: "Deciduous Fraction",
-    category: "Greenness",
-    valueType: "ratio",
-    defaultMin: 0,
-    defaultMax: 1,
+    category: "Land Cover & Built",
+    filterGroup: "adaptiveCapacity",
     format: "score3",
-    paletteId: "orange-green",
+    domainMin: 0,
+    domainMax: 0.6710048679302096,
+    colorDomainMin: 0,
+    colorDomainMax: 1,
+    paletteId: "adaptive",
     noDataPolicy: "transparent",
   },
   {
     id: "frac_shrub",
     propertyKey: "frac_shrub",
     label: "Shrub Fraction",
-    category: "Greenness",
-    valueType: "ratio",
-    defaultMin: 0,
-    defaultMax: 1,
+    category: "Land Cover & Built",
+    filterGroup: "adaptiveCapacity",
     format: "score3",
-    paletteId: "orange-green",
+    domainMin: 0,
+    domainMax: 0.2334325083523095,
+    colorDomainMin: 0,
+    colorDomainMax: 1,
+    paletteId: "adaptive",
     noDataPolicy: "transparent",
   },
   {
-    id: "frac_modified_herb",
-    propertyKey: "frac_modified_herb",
-    label: "Modified Herb Fraction",
-    category: "Greenness",
-    valueType: "ratio",
-    defaultMin: 0,
-    defaultMax: 1,
+    id: "frac_buildings",
+    propertyKey: "frac_buildings",
+    label: "Buildings Fraction",
+    category: "Land Cover & Built",
+    filterGroup: "exposure",
     format: "score3",
-    paletteId: "orange-green",
+    domainMin: 0,
+    domainMax: 0.6209677419354839,
+    colorDomainMin: 0,
+    colorDomainMax: 1,
+    paletteId: "built",
     noDataPolicy: "transparent",
   },
   {
-    id: "frac_natural_herb",
-    propertyKey: "frac_natural_herb",
-    label: "Natural Herb Fraction",
-    category: "Greenness",
-    valueType: "ratio",
-    defaultMin: 0,
-    defaultMax: 1,
+    id: "frac_other_built",
+    propertyKey: "frac_other_built",
+    label: "Other Built Fraction",
+    category: "Land Cover & Built",
+    filterGroup: "exposure",
     format: "score3",
-    paletteId: "orange-green",
+    domainMin: 0,
+    domainMax: 0.3625834695630489,
+    colorDomainMin: 0,
+    colorDomainMax: 1,
+    paletteId: "built",
     noDataPolicy: "transparent",
   },
-];
+  {
+    id: "frac_paved",
+    propertyKey: "frac_paved",
+    label: "Paved Fraction",
+    category: "Land Cover & Built",
+    filterGroup: "exposure",
+    format: "score3",
+    domainMin: 0,
+    domainMax: 0.734375,
+    colorDomainMin: 0,
+    colorDomainMax: 1,
+    paletteId: "built",
+    noDataPolicy: "transparent",
+  },
+  {
+    id: "hardscape_frac",
+    propertyKey: "hardscape_frac",
+    label: "Hardscape Fraction",
+    category: "Land Cover & Built",
+    filterGroup: "exposure",
+    format: "score3",
+    domainMin: 0,
+    domainMax: 1,
+    colorDomainMin: 0,
+    colorDomainMax: 1,
+    paletteId: "built",
+    noDataPolicy: "transparent",
+  },
+] as const;
 
-const metricsById: Record<DaMetricId, DaMetricConfig> = {
-  hvi_index_n01: DA_METRICS[0],
-  sensitivity_index: DA_METRICS[1],
-  adaptive_capacity_index: DA_METRICS[2],
-  exposure_index: DA_METRICS[3],
-  exposure_mean: DA_METRICS[4],
-  pop_total: DA_METRICS[5],
-  unemployment_rate: DA_METRICS[6],
-  low_income_rate: DA_METRICS[7],
-  pct_seniors_65plus: DA_METRICS[8],
-  pct_living_alone: DA_METRICS[9],
-  green_frac: DA_METRICS[10],
-  frac_coniferous: DA_METRICS[11],
-  frac_deciduous: DA_METRICS[12],
-  frac_shrub: DA_METRICS[13],
-  frac_modified_herb: DA_METRICS[14],
-  frac_natural_herb: DA_METRICS[15],
-};
+const metricsById = Object.fromEntries(
+  DA_METRICS.map((metric) => [metric.id, metric])
+) as Record<DaMetricId, DaMetricConfig>;
 
 export const DA_METRICS_BY_ID = metricsById;
 
