@@ -23,6 +23,12 @@ export interface RegionSearchEntry extends SearchEntryBase {
 }
 
 export type SearchEntry = DaSearchEntry | RegionSearchEntry;
+export interface AddressSearchResult extends SearchEntryBase {
+  kind: "address";
+  source: "bc-geocoder";
+}
+
+export type SearchResult = SearchEntry | AddressSearchResult;
 
 export interface SearchIndex {
   version: number;

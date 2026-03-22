@@ -1,4 +1,27 @@
 import type { SearchEntry } from "../types/search";
+import type { SearchIndex } from "../types/search";
+
+let cachedSearchIndexPromise: Promise<SearchIndex> | null = null;
+
+export function loadSearchIndex(): Promise<SearchIndex> {
+  if (cachedSearchIndexPromise) {
+    return cachedSearchIndexPromise;
+  }
+
+  cachedSearchIndexPromise = fetch(
+    `${import.meta.env.BASE_URL}search/hvi-search-index.json`
+  ).then((response) => {
+    if (!response.ok) {
+      throw new Error("Unable to load search index.");
+    }
+    return response.json() as Promise<SearchIndex>;
+  }).catch((error) => {
+    cachedSearchIndexPromise = null;
+    throw error;
+  });
+
+  return cachedSearchIndexPromise;
+}
 
 function normalizeSearchText(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, " ");

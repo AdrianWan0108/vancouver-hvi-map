@@ -84,7 +84,20 @@ describe("DaDetailsSection", () => {
     expect(openChevron).not.toHaveClass("rotate-180");
     expect(screen.getByText("Primary inputs")).toBeInTheDocument();
     expect(
-      screen.getByText("Display bars use current map display ranges for visual comparison only.")
+      screen.getByRole("button", { name: /About these bars/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "Mini bars use observed data ranges for comparison only. Map colors and legends use clipped display ranges for stronger contrast."
+      )
+    ).not.toBeInTheDocument();
+
+    fireEvent.focus(screen.getByRole("button", { name: /About these bars/i }));
+
+    expect(
+      screen.getByText(
+        "Mini bars use observed data ranges for comparison only. Map colors and legends use clipped display ranges for stronger contrast."
+      )
     ).toBeInTheDocument();
   });
 

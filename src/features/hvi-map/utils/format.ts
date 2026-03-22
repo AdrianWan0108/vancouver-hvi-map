@@ -1,4 +1,8 @@
-import type { DaMetricConfig, DaMetricFormatId } from "../config/daMetrics";
+import type {
+  DaMetricConfig,
+  DaMetricFormatId,
+  MetricDisplayScaleStrategy,
+} from "../config/daMetrics";
 
 export function toNumber(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) return value;
@@ -58,6 +62,32 @@ export function formatValueByFormat(
 
 export function formatMetricValue(metric: Pick<DaMetricConfig, "format">, value: unknown): string {
   return formatValueByFormat(metric.format, value);
+}
+
+export function formatLegendRangeLabel(
+  format: DaMetricFormatId,
+  value: unknown,
+  clipped: boolean,
+  side: "low" | "high"
+): string {
+  const formattedValue = formatValueByFormat(format, value);
+  if (!clipped) return formattedValue;
+  return side === "low" ? `< ${formattedValue}` : `> ${formattedValue}`;
+}
+
+export function getLegendRangeClipFlags(
+  displayScaleStrategy: MetricDisplayScaleStrategy
+): { low: boolean; high: boolean } {
+  switch (displayScaleStrategy) {
+    case "p05-p95":
+    case "p01-p99":
+      return { low: true, high: true };
+    case "zero-p95":
+      return { low: false, high: true };
+    case "observed":
+    default:
+      return { low: false, high: false };
+  }
 }
 
 export function parseNumericInput(raw: string): number | null {

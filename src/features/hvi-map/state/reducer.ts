@@ -42,7 +42,7 @@ export function createInitialMapUiState(): MapUiState {
     selectedMetric: DEFAULT_DA_METRIC_ID,
     filters: createInitialFilters(),
     isFilterMenuOpen: false,
-    showPeripheralAreas: true,
+    showPeripheralAreas: false,
     mapError: null,
   };
 }

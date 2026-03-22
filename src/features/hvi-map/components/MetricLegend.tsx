@@ -8,17 +8,29 @@ import {
 } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 import { getPaletteConfig } from "../config/palettes";
-import type { DaMetricCategory, DaMetricFormatId, MetricPaletteId } from "../config/daMetrics";
-import { formatValueByFormat } from "../utils/format";
+import type {
+  DaMetricCategory,
+  DaMetricFormatId,
+  MetricDisplayScaleStrategy,
+  MetricPaletteId,
+} from "../config/daMetrics";
+import {
+  formatLegendRangeLabel,
+  getLegendRangeClipFlags,
+} from "../utils/format";
 import HviMethodologySheet from "./HviMethodologySheet";
+
+const DISPLAY_RANGE_NOTE =
+  "Colors use a clipped display range to improve contrast across DAs. Filters use the full data range.";
 
 interface MetricLegendProps {
   className?: string;
   label: string;
   paletteId: MetricPaletteId;
   format: DaMetricFormatId;
-  colorDomainMin: number;
-  colorDomainMax: number;
+  displayScaleStrategy: MetricDisplayScaleStrategy;
+  displayDomainMin: number;
+  displayDomainMax: number;
   category?: DaMetricCategory | string;
   headerAction?: ReactNode;
 }
@@ -28,13 +40,15 @@ export default function MetricLegend({
   label,
   paletteId,
   format,
-  colorDomainMin,
-  colorDomainMax,
+  displayScaleStrategy,
+  displayDomainMin,
+  displayDomainMax,
   category,
   headerAction,
 }: MetricLegendProps) {
   const palette = getPaletteConfig(paletteId);
   const [lowColor, midColor, highColor] = palette.stops;
+  const clipFlags = getLegendRangeClipFlags(displayScaleStrategy);
 
   return (
     <div
@@ -64,8 +78,8 @@ export default function MetricLegend({
           }}
         />
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>{formatValueByFormat(format, colorDomainMin)}</span>
-          <span>{formatValueByFormat(format, colorDomainMax)}</span>
+          <span>{formatLegendRangeLabel(format, displayDomainMin, clipFlags.low, "low")}</span>
+          <span>{formatLegendRangeLabel(format, displayDomainMax, clipFlags.high, "high")}</span>
         </div>
         <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="meaning" className="border-border/70">
@@ -74,6 +88,9 @@ export default function MetricLegend({
             </AccordionTrigger>
             <AccordionContent>
               <p className="text-xs leading-5 text-muted-foreground">{palette.description}</p>
+              <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
+                {DISPLAY_RANGE_NOTE}
+              </p>
             </AccordionContent>
           </AccordionItem>
         </Accordion>

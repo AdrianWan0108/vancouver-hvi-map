@@ -1,50 +1,56 @@
+import { CircleHelpIcon } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import type { ZoomMode } from "../types/data";
 import {
-  getPeripheralVisibilityDescription,
-  isPeripheralVisibilityControlDisabled,
-} from "./panelContent";
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface ViewOptionsSectionProps {
-  zoomMode: ZoomMode;
   showPeripheralAreas: boolean;
   onShowPeripheralAreasChange: (showPeripheralAreas: boolean) => void;
 }
 
 export default function ViewOptionsSection({
-  zoomMode,
   showPeripheralAreas,
   onShowPeripheralAreasChange,
 }: ViewOptionsSectionProps) {
-  const isDisabled = isPeripheralVisibilityControlDisabled(zoomMode);
-  const description = getPeripheralVisibilityDescription(zoomMode);
-
   return (
-    <div className="grid gap-3 rounded-xl border bg-muted/30 p-3">
-      <div>
-        <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-          View Options
-        </p>
-        <p className="text-sm font-medium">Regional visibility</p>
-      </div>
-
-      <Label className="flex items-start gap-3 text-sm font-medium">
+    <div className="flex items-center justify-between rounded-xl border bg-muted/30 px-3 py-2.5">
+      <Label
+        htmlFor="show-peripheral-areas"
+        className="flex min-w-0 items-center gap-2.5 text-sm font-medium"
+      >
         <Checkbox
           id="show-peripheral-areas"
           checked={showPeripheralAreas}
-          disabled={isDisabled}
           onChange={(event) =>
             onShowPeripheralAreasChange(event.currentTarget.checked)
           }
         />
-        <span className="grid gap-1">
-          <span>Show peripheral areas</span>
-          <span className="text-xs font-normal leading-5 text-muted-foreground">
-            {description}
-          </span>
-        </span>
+        <span className="truncate">Show peripheral areas</span>
       </Label>
+
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className="inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] focus-visible:outline-none"
+              aria-label="About peripheral areas"
+            >
+              <CircleHelpIcon className="size-3.5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-72">
+            Peripheral areas are mostly lower-population regions. Some special
+            regions, including Electoral Area A, can also be included. This
+            setting affects both region view and the DAs inside those regions.
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </div>
   );
 }

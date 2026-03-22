@@ -8,8 +8,8 @@ export type MapExpression = boolean | ExpressionSpecification;
 
 type FillMetricConfig = {
   propertyKey: string;
-  colorDomainMin: number;
-  colorDomainMax: number;
+  displayDomainMin: number;
+  displayDomainMax: number;
   paletteId: MetricPaletteId;
 };
 
@@ -54,22 +54,23 @@ function buildClampedValueExpression(
 
 function buildPaletteExpression({
   propertyKey,
-  colorDomainMin,
-  colorDomainMax,
+  displayDomainMin,
+  displayDomainMax,
   paletteId,
 }: FillMetricConfig): ExpressionSpecification {
-  const midpoint = colorDomainMin + (colorDomainMax - colorDomainMin) / 2;
+  const midpoint =
+    displayDomainMin + (displayDomainMax - displayDomainMin) / 2;
   const [lowColor, midColor, highColor] = getPaletteStops(paletteId);
 
   return [
     "interpolate",
     ["linear"],
-    buildClampedValueExpression(propertyKey, colorDomainMin, colorDomainMax),
-    colorDomainMin,
+    buildClampedValueExpression(propertyKey, displayDomainMin, displayDomainMax),
+    displayDomainMin,
     lowColor,
     midpoint,
     midColor,
-    colorDomainMax,
+    displayDomainMax,
     highColor,
   ] as ExpressionSpecification;
 }
@@ -82,15 +83,86 @@ export function buildFillColorExpression(
 
 export function buildRegionVisibilityFilterExpression(
   showPeripheralAreas: boolean,
-  populationThreshold: number
+  populationThreshold: number,
+  manualIncludeRegionKeys: readonly (string | number)[] = [],
+  manualExcludeRegionKeys: readonly (string | number)[] = []
 ): MapExpression {
   if (showPeripheralAreas) return true;
 
-  return [
+  const includeLiteral = manualIncludeRegionKeys.map((key) => String(key));
+  const excludeLiteral = manualExcludeRegionKeys.map((key) => String(key));
+  const regionKeyExpression = ["to-string", ["get", "MunNum"]] as ExpressionSpecification;
+  const basePopulationExpression = [
     "all",
     ["has", "region_pop_total"],
     [">=", ["to-number", ["get", "region_pop_total"]], populationThreshold],
   ] as ExpressionSpecification;
+
+  if (includeLiteral.length === 0 && excludeLiteral.length === 0) {
+    return basePopulationExpression;
+  }
+
+  const visibleExpressions: ExpressionSpecification[] = [basePopulationExpression];
+
+  if (excludeLiteral.length > 0) {
+    visibleExpressions.push([
+      "in",
+      regionKeyExpression,
+      ["literal", excludeLiteral],
+    ] as unknown as ExpressionSpecification);
+  }
+
+  const visibleExpression: ExpressionSpecification =
+    visibleExpressions.length === 1
+      ? visibleExpressions[0]
+      : (["any", ...visibleExpressions] as ExpressionSpecification);
+
+  if (includeLiteral.length === 0) {
+    return visibleExpression;
+  }
+
+  const includeMembershipExpression = [
+    "in",
+    regionKeyExpression,
+    ["literal", includeLiteral],
+  ] as unknown as ExpressionSpecification;
+
+  return [
+    "all",
+    visibleExpression,
+    ["!", includeMembershipExpression] as unknown as ExpressionSpecification,
+  ] as unknown as ExpressionSpecification;
+}
+
+export function buildDaPeripheralVisibilityFilterExpression(
+  showPeripheralAreas: boolean,
+  peripheralDaDguids: readonly string[]
+): MapExpression {
+  if (showPeripheralAreas || peripheralDaDguids.length === 0) return true;
+
+  const daMembershipExpression = [
+    "in",
+    ["to-string", ["get", "DGUID"]] as ExpressionSpecification,
+    ["literal", [...peripheralDaDguids]],
+  ] as unknown as ExpressionSpecification;
+
+  return [
+    "all",
+    ["has", "DGUID"],
+    ["!", daMembershipExpression] as unknown as ExpressionSpecification,
+  ] as unknown as ExpressionSpecification;
+}
+
+export function combineFilterExpressions(
+  ...expressions: MapExpression[]
+): MapExpression {
+  const effectiveExpressions = expressions.filter(
+    (expression): expression is ExpressionSpecification => expression !== true
+  );
+
+  if (effectiveExpressions.length === 0) return true;
+  if (effectiveExpressions.length === 1) return effectiveExpressions[0];
+  return ["all", ...effectiveExpressions] as ExpressionSpecification;
 }
 
 export function buildLockedFeatureFilterExpression(

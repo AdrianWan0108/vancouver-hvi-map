@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DA_METRICS_BY_ID } from "../../src/features/hvi-map/config/daMetrics";
 import { REGION_HVI_METRIC } from "../../src/features/hvi-map/config/regionConfig";
 import {
+  buildDaPeripheralVisibilityFilterExpression,
   DA_ZOOM_REGION_DIVIDER_CASING_STYLE,
   DA_ZOOM_REGION_DIVIDER_STYLE,
   buildDaFillOpacityExpression,
@@ -14,73 +15,84 @@ import {
 import { createInitialMapUiState } from "../../src/features/hvi-map/state/reducer";
 
 describe("map expressions", () => {
-  it("uses the context palette and observed domain for population layers", () => {
+  it("uses the context palette and clipped p01-p99 domain for population layers", () => {
     const expression = buildFillColorExpression(DA_METRICS_BY_ID.pop_total);
 
+    expect(DA_METRICS_BY_ID.pop_total.displayScaleStrategy).toBe("p01-p99");
     expect(expression[0]).toBe("interpolate");
     expect(expression[2]).toEqual([
       "max",
-      0,
-      ["min", 8800, ["coalesce", ["to-number", ["get", "pop_total"]], 0]],
+      217.31,
+      [
+        "min",
+        2513.28,
+        ["coalesce", ["to-number", ["get", "pop_total"]], 217.31],
+      ],
     ]);
-    expect(expression[3]).toBe(0);
+    expect(expression[3]).toBe(217.31);
     expect(expression[4]).toBe("#edf4ff");
-    expect(expression[5]).toBe(4400);
+    expect(expression[5]).toBeCloseTo(1365.295);
     expect(expression[6]).toBe("#6c8ef6");
-    expect(expression[7]).toBe(8800);
+    expect(expression[7]).toBe(2513.28);
     expect(expression[8]).toBe("#1d4f8c");
   });
 
-  it("uses the adaptive palette and fixed 0-1 color domain for greenness metrics", () => {
+  it("uses the adaptive palette and clipped p05-p95 domain for greenness metrics", () => {
     const expression = buildFillColorExpression(DA_METRICS_BY_ID.green_frac);
 
-    expect(expression[3]).toBe(0);
+    expect(DA_METRICS_BY_ID.green_frac.displayScaleStrategy).toBe("p05-p95");
+    expect(expression[3]).toBe(0.034259);
     expect(expression[4]).toBe("#eef7e8");
-    expect(expression[5]).toBe(0.5);
+    expect(expression[5]).toBeCloseTo(0.290869);
     expect(expression[6]).toBe("#78a67e");
-    expect(expression[7]).toBe(1);
+    expect(expression[7]).toBe(0.547479);
     expect(expression[8]).toBe("#1b4332");
   });
 
-  it("uses the hvi palette and fixed 0-1 color domain for HVI metrics", () => {
+  it("uses the hvi palette and clipped p05-p95 domain for HVI metrics", () => {
     const expression = buildFillColorExpression(DA_METRICS_BY_ID.hvi_index_n01);
 
-    expect(expression[3]).toBe(0);
+    expect(DA_METRICS_BY_ID.hvi_index_n01.displayScaleStrategy).toBe("p05-p95");
+    expect(expression[3]).toBe(0.23931);
     expect(expression[4]).toBe("#fff1d6");
-    expect(expression[5]).toBe(0.5);
+    expect(expression[5]).toBeCloseTo(0.384515);
     expect(expression[6]).toBe("#f0a35f");
-    expect(expression[7]).toBe(1);
+    expect(expression[7]).toBe(0.52972);
     expect(expression[8]).toBe("#9b2226");
   });
 
-  it("uses a fixed 0-100 color domain for percentage indicators", () => {
+  it("uses clipped percentile domains for percentage indicators", () => {
     const expression = buildFillColorExpression(DA_METRICS_BY_ID.pct_renter);
 
-    expect(expression[3]).toBe(0);
+    expect(DA_METRICS_BY_ID.pct_renter.displayScaleStrategy).toBe("p05-p95");
+    expect(expression[3]).toBe(6.666667);
     expect(expression[4]).toBe("#fff0e7");
-    expect(expression[5]).toBe(50);
+    expect(expression[5]).toBeCloseTo(43.4854695);
     expect(expression[6]).toBe("#d88766");
-    expect(expression[7]).toBe(100);
+    expect(expression[7]).toBe(80.304272);
     expect(expression[8]).toBe("#934534");
   });
 
-  it("keeps observed domains for temperature-based heat metrics", () => {
+  it("uses clipped p05-p95 domains for temperature-based heat metrics", () => {
     const expression = buildFillColorExpression(DA_METRICS_BY_ID.exposure_mean);
 
-    expect(expression[3]).toBe(17.54);
+    expect(DA_METRICS_BY_ID.exposure_mean.displayScaleStrategy).toBe("p05-p95");
+    expect(expression[3]).toBe(23.61);
     expect(expression[4]).toBe("#fff4de");
-    expect(expression[5]).toBeCloseTo(24.946);
+    expect(expression[5]).toBeCloseTo(26.83);
     expect(expression[6]).toBe("#e7a34d");
-    expect(expression[7]).toBe(32.352);
+    expect(expression[7]).toBe(30.05);
     expect(expression[8]).toBe("#bb6a1e");
   });
 
-  it("uses a fixed 0-1 color domain for regional HVI", () => {
+  it("uses a clipped p05-p95 color domain for regional HVI", () => {
     const expression = buildFillColorExpression(REGION_HVI_METRIC);
 
-    expect(expression[3]).toBe(0);
+    expect(REGION_HVI_METRIC.displayScaleStrategy).toBe("p05-p95");
+    expect(expression[3]).toBe(0.13887);
     expect(expression[4]).toBe("#fff1d6");
-    expect(expression[7]).toBe(1);
+    expect(expression[5]).toBeCloseTo(0.288421);
+    expect(expression[7]).toBe(0.437972);
     expect(expression[8]).toBe("#9b2226");
   });
 
@@ -128,12 +140,36 @@ describe("map expressions", () => {
   });
 
   it("builds a region filter when peripheral areas are hidden", () => {
-    const expression = buildRegionVisibilityFilterExpression(false, 5000);
+    const expression = buildRegionVisibilityFilterExpression(false, 5000, [6], []);
 
     expect(expression).toEqual([
       "all",
-      ["has", "region_pop_total"],
-      [">=", ["to-number", ["get", "region_pop_total"]], 5000],
+      [
+        "all",
+        ["has", "region_pop_total"],
+        [">=", ["to-number", ["get", "region_pop_total"]], 5000],
+      ],
+      ["!", ["in", ["to-string", ["get", "MunNum"]], ["literal", ["6"]]]],
+    ]);
+  });
+
+  it("builds a DA filter that hides only peripheral DAs when the toggle is off", () => {
+    expect(
+      buildDaPeripheralVisibilityFilterExpression(false, [
+        "2021S051259999001",
+        "2021S051259999002",
+      ])
+    ).toEqual([
+      "all",
+      ["has", "DGUID"],
+      [
+        "!",
+        [
+          "in",
+          ["to-string", ["get", "DGUID"]],
+          ["literal", ["2021S051259999001", "2021S051259999002"]],
+        ],
+      ],
     ]);
   });
 

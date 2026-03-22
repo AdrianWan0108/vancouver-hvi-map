@@ -79,7 +79,7 @@ function FilterRangeField({
           {metric.label}
         </Label>
         {isFilterRangeActive(metric.id, range) ? (
-          <span className="size-1.5 rounded-full bg-emerald-400" aria-hidden="true" />
+          <span className="size-1.5 rounded-full bg-primary/70" aria-hidden="true" />
         ) : null}
       </div>
 
@@ -212,16 +212,18 @@ export default function FilterMenu() {
         <div className="flex items-center justify-between border-b border-border/80 px-4 py-2.5">
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             size="xs"
+            className="border-border/90 bg-background/90 text-foreground shadow-xs hover:bg-accent/70"
             onClick={() => dispatch({ type: "filtersReset" })}
           >
             Reset
           </Button>
           <Button
             type="button"
-            variant="ghost"
+            variant="default"
             size="xs"
+            className="shadow-xs"
             onClick={() =>
               dispatch({ type: "filterMenuOpenChanged", isOpen: false })
             }
@@ -233,6 +235,9 @@ export default function FilterMenu() {
 
         <ScrollArea className="max-h-[min(82vh,46rem)]">
           <div className="grid gap-3 p-3.5">
+            <p className="text-[11px] leading-4 text-muted-foreground">
+              Filters use full metric ranges. Map colors may use clipped display ranges for contrast.
+            </p>
             {groupedMetrics.map((group, groupIndex) => (
               <section key={group.id} className="grid gap-2">
                 <div className="flex items-center gap-2">
