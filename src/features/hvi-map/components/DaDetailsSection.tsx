@@ -22,6 +22,7 @@ import { getPaletteConfig } from "../config/palettes";
 import type { DaFeatureProperties } from "../types/data";
 import { resolvePanelDensity, type PanelDensity } from "./daDetailsDensity";
 import {
+  DA_COMPONENT_DISPLAY_SCALING_NOTE,
   getDaComponentDetailCards,
   getDaHviSummaryDetail,
   type DaComponentDetailCard,
@@ -386,7 +387,6 @@ function ComponentDetailPanel({
               <CardTitle className="text-base">{component.title}</CardTitle>
               <Badge variant="secondary">{component.scoreValue}</Badge>
             </div>
-            <p className="text-sm text-muted-foreground">{component.formula}</p>
           </div>
           {onClose ? (
             <Button type="button" variant="ghost" size="icon-xs" onClick={onClose}>
@@ -398,13 +398,25 @@ function ComponentDetailPanel({
       </CardHeader>
       <Separator />
       <CardContent className="grid max-h-[calc(100vh-12rem)] gap-4 overflow-auto px-4 py-4">
-        <div className="flex flex-wrap gap-1.5">
-          {component.notes.map((note) => (
-            <Badge key={note} variant="secondary" className="font-normal">
-              {note}
-            </Badge>
-          ))}
-        </div>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="xs"
+                className="w-fit rounded-full border-border/80 px-2.5 text-muted-foreground"
+                aria-label="About these bars"
+              >
+                <CircleHelpIcon className="size-3.5" />
+                <span>About these bars</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top" align="start" className="max-w-72">
+              <p className="text-xs leading-4">{DA_COMPONENT_DISPLAY_SCALING_NOTE}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
 
         {component.sections.map((section, index) => (
           <div key={section.title} className="grid gap-3">

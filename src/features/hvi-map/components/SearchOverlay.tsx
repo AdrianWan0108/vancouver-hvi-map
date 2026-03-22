@@ -5,8 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { SearchEntry, SearchIndex } from "../types/search";
-import { getSearchResults } from "../search";
+import { getSearchResults, loadSearchIndex } from "../search";
+import {
+  derivePeripheralAreaMetadata,
+  isPeripheralSearchEntry,
+} from "../search/peripheralAreas";
 import { useMapDispatch } from "../state/useMapDispatch";
+import { useMapUiState } from "../state/useMapUiState";
 
 interface SearchOverlayProps {
   onSelectResult: (entry: SearchEntry) => void;
@@ -18,6 +23,7 @@ function ResultKindBadge({ kind }: { kind: SearchEntry["kind"] }) {
 
 export default function SearchOverlay({ onSelectResult }: SearchOverlayProps) {
   const dispatch = useMapDispatch();
+  const uiState = useMapUiState();
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [searchIndex, setSearchIndex] = useState<SearchIndex | null>(null);
@@ -25,27 +31,22 @@ export default function SearchOverlay({ onSelectResult }: SearchOverlayProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const controller = new AbortController();
+    let cancelled = false;
 
-    fetch(`${import.meta.env.BASE_URL}search/hvi-search-index.json`, {
-      signal: controller.signal,
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Unable to load search index.");
-        }
-        return response.json() as Promise<SearchIndex>;
-      })
+    loadSearchIndex()
       .then((index) => {
+        if (cancelled) return;
         setSearchIndex(index);
         setLoadError(null);
       })
       .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === "AbortError") return;
+        if (cancelled) return;
         setLoadError(error instanceof Error ? error.message : "Unable to load search index.");
       });
 
-    return () => controller.abort();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -63,10 +64,22 @@ export default function SearchOverlay({ onSelectResult }: SearchOverlayProps) {
     () => getSearchResults(searchIndex?.entries ?? [], query),
     [query, searchIndex]
   );
+  const peripheralMetadata = useMemo(
+    () => (searchIndex ? derivePeripheralAreaMetadata(searchIndex) : null),
+    [searchIndex]
+  );
 
   const showResults = isOpen && (results.length > 0 || Boolean(loadError) || query.trim().length >= 2);
 
   const handleSelect = (entry: SearchEntry) => {
+    if (
+      !uiState.showPeripheralAreas &&
+      peripheralMetadata &&
+      isPeripheralSearchEntry(entry, peripheralMetadata)
+    ) {
+      dispatch({ type: "peripheralVisibilityChanged", showPeripheralAreas: true });
+    }
+
     if (entry.kind === "da") {
       dispatch({ type: "unlockDa" });
       dispatch({

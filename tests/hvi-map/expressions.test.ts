@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DA_METRICS_BY_ID } from "../../src/features/hvi-map/config/daMetrics";
 import { REGION_HVI_METRIC } from "../../src/features/hvi-map/config/regionConfig";
 import {
+  buildDaPeripheralVisibilityFilterExpression,
   DA_ZOOM_REGION_DIVIDER_CASING_STYLE,
   DA_ZOOM_REGION_DIVIDER_STYLE,
   buildDaFillOpacityExpression,
@@ -139,12 +140,36 @@ describe("map expressions", () => {
   });
 
   it("builds a region filter when peripheral areas are hidden", () => {
-    const expression = buildRegionVisibilityFilterExpression(false, 5000);
+    const expression = buildRegionVisibilityFilterExpression(false, 5000, [6], []);
 
     expect(expression).toEqual([
       "all",
-      ["has", "region_pop_total"],
-      [">=", ["to-number", ["get", "region_pop_total"]], 5000],
+      [
+        "all",
+        ["has", "region_pop_total"],
+        [">=", ["to-number", ["get", "region_pop_total"]], 5000],
+      ],
+      ["!", ["in", ["to-string", ["get", "MunNum"]], ["literal", ["6"]]]],
+    ]);
+  });
+
+  it("builds a DA filter that hides only peripheral DAs when the toggle is off", () => {
+    expect(
+      buildDaPeripheralVisibilityFilterExpression(false, [
+        "2021S051259999001",
+        "2021S051259999002",
+      ])
+    ).toEqual([
+      "all",
+      ["has", "DGUID"],
+      [
+        "!",
+        [
+          "in",
+          ["to-string", ["get", "DGUID"]],
+          ["literal", ["2021S051259999001", "2021S051259999002"]],
+        ],
+      ],
     ]);
   });
 

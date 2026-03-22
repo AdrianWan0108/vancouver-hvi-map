@@ -5,11 +5,9 @@ import InfoModeSection from "./InfoModeSection";
 import DaDetailsSection from "./DaDetailsSection";
 import RegionDetailsSection from "./RegionDetailsSection";
 import ViewOptionsSection from "./ViewOptionsSection";
-import FontPreviewSection from "./FontPreviewSection";
 import {
   getPanelHeaderContent,
   shouldShowDaControls,
-  shouldShowViewOptions,
 } from "./panelContent";
 import { useMemo } from "react";
 import {
@@ -96,30 +94,26 @@ export default function LeftPanel() {
               <RegionDetailsSection region={activeRegion} />
             )}
 
-            {shouldShowViewOptions(state.zoomMode) ? (
-              <ViewOptionsSection
-                zoomMode={state.zoomMode}
-                showPeripheralAreas={state.showPeripheralAreas}
-                onShowPeripheralAreasChange={(showPeripheralAreas) =>
-                  dispatch({
-                    type: "peripheralVisibilityChanged",
-                    showPeripheralAreas,
-                  })
-                }
-              />
-            ) : null}
           </div>
         </div>
 
         <div className="shrink-0 border-t border-border/80 px-5 py-4">
           <div className="grid gap-4">
+            <ViewOptionsSection
+              showPeripheralAreas={state.showPeripheralAreas}
+              onShowPeripheralAreasChange={(showPeripheralAreas) =>
+                dispatch({
+                  type: "peripheralVisibilityChanged",
+                  showPeripheralAreas,
+                })
+              }
+            />
             {shouldShowDaControls(state.zoomMode) ? (
               <>
                 <LayerSelect />
                 <FilterMenu />
               </>
             ) : null}
-            <FontPreviewSection />
           </div>
         </div>
       </div>

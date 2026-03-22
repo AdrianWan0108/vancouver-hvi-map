@@ -1,23 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   getPanelHeaderContent,
-  getPeripheralVisibilityDescription,
-  isPeripheralVisibilityControlDisabled,
   shouldShowDaControls,
-  shouldShowViewOptions,
 } from "../../src/features/hvi-map/components/panelContent";
 import { getRegionDetailsRows } from "../../src/features/hvi-map/components/regionDetails";
 
 describe("panel content helpers", () => {
-  it("keeps peripheral visibility enabled only in region mode", () => {
-    expect(isPeripheralVisibilityControlDisabled("region")).toBe(false);
-    expect(isPeripheralVisibilityControlDisabled("da")).toBe(true);
-    expect(shouldShowViewOptions("region")).toBe(true);
-    expect(shouldShowViewOptions("da")).toBe(false);
-    expect(getPeripheralVisibilityDescription("region")).toContain("below 5,000");
-    expect(getPeripheralVisibilityDescription("da")).toContain("Region view only");
-  });
-
   it("keeps DA controls available whenever DA mode is active", () => {
     expect(shouldShowDaControls("da")).toBe(true);
     expect(shouldShowDaControls("region")).toBe(false);

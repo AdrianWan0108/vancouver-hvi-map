@@ -8,6 +8,8 @@ import type { RegionFeatureProperties } from "../types/data";
 export const VANCOUVER_CENTER: [number, number] = [-123.1207, 49.2827];
 export const ZOOM_DA = 10.5;
 export const PERIPHERAL_REGION_POPULATION_THRESHOLD = 5000;
+export const PERIPHERAL_REGION_MANUAL_INCLUDE_KEYS = [6] as const;
+export const PERIPHERAL_REGION_MANUAL_EXCLUDE_KEYS = [] as const;
 
 export interface RegionMetricConfig {
   propertyKey: Extract<keyof RegionFeatureProperties, string>;

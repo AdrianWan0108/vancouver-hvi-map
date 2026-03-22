@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useRef, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import maplibregl, { Map as MapLibreMap } from "maplibre-gl";
 import type { MapGeoJSONFeature, MapLayerMouseEvent, MapMouseEvent } from "maplibre-gl";
 import { PMTiles, Protocol } from "pmtiles";
 import { DA_METRICS_BY_ID, DEFAULT_DA_METRIC_ID } from "../config/daMetrics";
 import {
+  PERIPHERAL_REGION_MANUAL_EXCLUDE_KEYS,
+  PERIPHERAL_REGION_MANUAL_INCLUDE_KEYS,
   PERIPHERAL_REGION_POPULATION_THRESHOLD,
   REGION_HVI_METRIC,
   VANCOUVER_CENTER,
@@ -20,10 +22,12 @@ import { getRegionDisplayName } from "../utils/region";
 import {
   DA_ZOOM_REGION_DIVIDER_CASING_STYLE,
   DA_ZOOM_REGION_DIVIDER_STYLE,
+  buildDaPeripheralVisibilityFilterExpression,
   buildDaFillOpacityExpression,
   buildFillColorExpression,
   buildFilterExpression,
   buildLockedFeatureFilterExpression,
+  combineFilterExpressions,
   buildLineWidthExpression,
   buildRegionVisibilityFilterExpression,
   LOCKED_DA_OUTLINE_STYLE,
@@ -34,6 +38,11 @@ import { MAP_LAYERS, MAP_SOURCES, SOURCE_LAYERS } from "./layers";
 import { getPmtilesUrls } from "./sources";
 import { useMapDispatch } from "../state/useMapDispatch";
 import { useMapUiState } from "../state/useMapUiState";
+import {
+  isPeripheralRegion,
+  loadPeripheralAreaMetadata,
+  type PeripheralAreaMetadata,
+} from "../search/peripheralAreas";
 
 interface TooltipContent {
   title?: string;
@@ -53,6 +62,8 @@ interface HoverEventPayload {
   point: MapMouseEvent["point"];
   lngLat: MapMouseEvent["lngLat"];
 }
+
+const EMPTY_PERIPHERAL_DGUIDS: string[] = [];
 
 function getFeatureId(feature: MapGeoJSONFeature): FeatureId | undefined {
   if (typeof feature.id === "string" || typeof feature.id === "number") {
@@ -137,6 +148,10 @@ function toLngLatBounds(bounds: SearchBounds): [[number, number], [number, numbe
 export function useMapController(containerRef: RefObject<HTMLDivElement | null>) {
   const state = useMapUiState();
   const dispatch = useMapDispatch();
+  const [peripheralMetadata, setPeripheralMetadata] =
+    useState<PeripheralAreaMetadata | null>(null);
+  const peripheralDaDguids =
+    peripheralMetadata?.peripheralDaDguids ?? EMPTY_PERIPHERAL_DGUIDS;
 
   const mapRef = useRef<MapLibreMap | null>(null);
   const tooltipRef = useRef<maplibregl.Popup | null>(null);
@@ -147,6 +162,26 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    loadPeripheralAreaMetadata()
+      .then((metadata) => {
+        if (!cancelled) {
+          setPeripheralMetadata(metadata);
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.warn("Unable to load peripheral area metadata.", error);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -452,7 +487,13 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
         );
         const regionVisibilityFilter = buildRegionVisibilityFilterExpression(
           stateRef.current.showPeripheralAreas,
-          PERIPHERAL_REGION_POPULATION_THRESHOLD
+          PERIPHERAL_REGION_POPULATION_THRESHOLD,
+          PERIPHERAL_REGION_MANUAL_INCLUDE_KEYS,
+          PERIPHERAL_REGION_MANUAL_EXCLUDE_KEYS
+        );
+        const daPeripheralFilter = buildDaPeripheralVisibilityFilterExpression(
+          stateRef.current.showPeripheralAreas,
+          EMPTY_PERIPHERAL_DGUIDS
         );
         const regionFillColor = buildFillColorExpression(REGION_HVI_METRIC);
         const daFillColor = buildFillColorExpression(metric);
@@ -523,6 +564,7 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
           source: MAP_SOURCES.da,
           "source-layer": SOURCE_LAYERS.da,
           minzoom: ZOOM_DA,
+          ...(daPeripheralFilter === true ? {} : { filter: daPeripheralFilter }),
           paint: {
             "fill-color": daFillColor,
             "fill-outline-color": daFillColor,
@@ -536,6 +578,7 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
           source: MAP_SOURCES.da,
           "source-layer": SOURCE_LAYERS.da,
           minzoom: ZOOM_DA,
+          ...(daPeripheralFilter === true ? {} : { filter: daPeripheralFilter }),
           paint: {
             "line-width": buildLineWidthExpression(1.6, 0.6),
             "line-opacity": 0.2,
@@ -548,6 +591,9 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
           source: MAP_SOURCES.regions,
           "source-layer": SOURCE_LAYERS.regions,
           minzoom: ZOOM_DA,
+          ...(regionVisibilityFilter === true
+            ? {}
+            : { filter: regionVisibilityFilter }),
           layout: {
             "line-cap": "round",
             "line-join": "round",
@@ -565,6 +611,9 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
           source: MAP_SOURCES.regions,
           "source-layer": SOURCE_LAYERS.regions,
           minzoom: ZOOM_DA,
+          ...(regionVisibilityFilter === true
+            ? {}
+            : { filter: regionVisibilityFilter }),
           layout: {
             "line-cap": "round",
             "line-join": "round",
@@ -582,9 +631,12 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
           source: MAP_SOURCES.da,
           "source-layer": SOURCE_LAYERS.da,
           minzoom: ZOOM_DA,
-          filter: buildLockedFeatureFilterExpression(
-            "DGUID",
-            stateRef.current.lockedDa?.DGUID ?? null
+          filter: combineFilterExpressions(
+            daPeripheralFilter,
+            buildLockedFeatureFilterExpression(
+              "DGUID",
+              stateRef.current.lockedDa?.DGUID ?? null
+            )
           ),
           layout: {
             "line-cap": "round",
@@ -711,11 +763,19 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
     if (!map) return;
     if (!map.getLayer(MAP_LAYERS.daLockedLine)) return;
 
+    const daPeripheralFilter = buildDaPeripheralVisibilityFilterExpression(
+      state.showPeripheralAreas,
+      peripheralDaDguids
+    );
+
     map.setFilter(
       MAP_LAYERS.daLockedLine,
-      buildLockedFeatureFilterExpression("DGUID", state.lockedDa?.DGUID ?? null)
+      combineFilterExpressions(
+        daPeripheralFilter,
+        buildLockedFeatureFilterExpression("DGUID", state.lockedDa?.DGUID ?? null)
+      )
     );
-  }, [state.lockedDa]);
+  }, [peripheralDaDguids, state.lockedDa, state.showPeripheralAreas]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -724,13 +784,55 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
 
     const regionVisibilityFilter = buildRegionVisibilityFilterExpression(
       state.showPeripheralAreas,
-      PERIPHERAL_REGION_POPULATION_THRESHOLD
+      PERIPHERAL_REGION_POPULATION_THRESHOLD,
+      PERIPHERAL_REGION_MANUAL_INCLUDE_KEYS,
+      PERIPHERAL_REGION_MANUAL_EXCLUDE_KEYS
     );
-    const nextFilter =
+    const nextRegionFilter =
       regionVisibilityFilter === true ? null : regionVisibilityFilter;
+    const daPeripheralFilter = buildDaPeripheralVisibilityFilterExpression(
+      state.showPeripheralAreas,
+      peripheralDaDguids
+    );
+    const nextDaFilter = daPeripheralFilter === true ? null : daPeripheralFilter;
 
-    map.setFilter(MAP_LAYERS.regionsFill, nextFilter);
-    map.setFilter(MAP_LAYERS.regionsLine, nextFilter);
+    map.setFilter(MAP_LAYERS.regionsFill, nextRegionFilter);
+    map.setFilter(MAP_LAYERS.regionsLine, nextRegionFilter);
+    if (map.getLayer(MAP_LAYERS.regionsLineDaCasing)) {
+      map.setFilter(MAP_LAYERS.regionsLineDaCasing, nextRegionFilter);
+    }
+    if (map.getLayer(MAP_LAYERS.regionsLineDa)) {
+      map.setFilter(MAP_LAYERS.regionsLineDa, nextRegionFilter);
+    }
+    if (map.getLayer(MAP_LAYERS.daFill)) {
+      map.setFilter(MAP_LAYERS.daFill, nextDaFilter);
+    }
+    if (map.getLayer(MAP_LAYERS.daLine)) {
+      map.setFilter(MAP_LAYERS.daLine, nextDaFilter);
+    }
+
+    const hideTooltip = () => {
+      tooltipRef.current?.remove();
+      map.getCanvas().style.cursor = "";
+    };
+
+    if (
+      !state.showPeripheralAreas &&
+      state.lockedRegion &&
+      isPeripheralRegion(state.lockedRegion)
+    ) {
+      dispatch({ type: "unlockRegion" });
+      hideTooltip();
+    }
+
+    if (
+      !state.showPeripheralAreas &&
+      state.lockedDa &&
+      peripheralDaDguids.includes(state.lockedDa.DGUID)
+    ) {
+      dispatch({ type: "unlockDa" });
+      hideTooltip();
+    }
 
     if (
       !state.showPeripheralAreas &&
@@ -748,11 +850,37 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
         { hover: false }
       );
       hoveredRegionIdRef.current = undefined;
-      tooltipRef.current?.remove();
-      map.getCanvas().style.cursor = "";
+      hideTooltip();
       dispatch({ type: "hoveredRegionChanged", region: null });
     }
-  }, [dispatch, state.lockedRegion, state.showPeripheralAreas, state.zoomMode]);
+
+    if (
+      !state.showPeripheralAreas &&
+      state.zoomMode === "da" &&
+      !state.lockedDa &&
+      hoveredDaIdRef.current !== undefined &&
+      map.getSource(MAP_SOURCES.da)
+    ) {
+      map.setFeatureState(
+        {
+          source: MAP_SOURCES.da,
+          sourceLayer: SOURCE_LAYERS.da,
+          id: hoveredDaIdRef.current,
+        },
+        { hover: false }
+      );
+      hoveredDaIdRef.current = undefined;
+      hideTooltip();
+      dispatch({ type: "hoveredDaChanged", da: null, regionName: null });
+    }
+  }, [
+    dispatch,
+    peripheralDaDguids,
+    state.lockedDa,
+    state.lockedRegion,
+    state.showPeripheralAreas,
+    state.zoomMode,
+  ]);
 
   const focusSearchResult = useCallback((entry: SearchEntry) => {
     const map = mapRef.current;

@@ -79,7 +79,7 @@ function FilterRangeField({
           {metric.label}
         </Label>
         {isFilterRangeActive(metric.id, range) ? (
-          <span className="size-1.5 rounded-full bg-emerald-400" aria-hidden="true" />
+          <span className="size-1.5 rounded-full bg-primary/70" aria-hidden="true" />
         ) : null}
       </div>
 
@@ -212,16 +212,18 @@ export default function FilterMenu() {
         <div className="flex items-center justify-between border-b border-border/80 px-4 py-2.5">
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             size="xs"
+            className="border-border/90 bg-background/90 text-foreground shadow-xs hover:bg-accent/70"
             onClick={() => dispatch({ type: "filtersReset" })}
           >
             Reset
           </Button>
           <Button
             type="button"
-            variant="ghost"
+            variant="default"
             size="xs"
+            className="shadow-xs"
             onClick={() =>
               dispatch({ type: "filterMenuOpenChanged", isOpen: false })
             }

@@ -48,7 +48,6 @@ describe("DA component detail helpers", () => {
       "Adaptive Capacity (A)",
     ]);
 
-    expect(cards[0].formula).toContain("0.67 * exposure_mean_n01 + 0.33 * hardscape_frac_n01");
     expect(cards[0].previewSegments.map((segment) => segment.paletteId)).toEqual([
       "heat",
       "built",
@@ -63,7 +62,6 @@ describe("DA component detail helpers", () => {
       "frac_other_built",
     ]);
 
-    expect(cards[1].notes).toContain("4 equal contributors");
     expect(cards[1].previewSegments.every((segment) => segment.paletteId === "social")).toBe(
       true
     );

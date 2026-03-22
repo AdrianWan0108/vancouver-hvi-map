@@ -19,8 +19,6 @@ interface ComponentSpec {
   title: string;
   shortTitle: string;
   scoreMetricId: DaMetricId;
-  formula: string;
-  notes: readonly string[];
   previewSegments: readonly {
     label: string;
     weight: number;
@@ -47,8 +45,6 @@ export interface DaComponentDetailCard {
   title: string;
   shortTitle: string;
   scoreValue: string;
-  formula: string;
-  notes: readonly string[];
   previewSegments: readonly {
     label: string;
     weight: number;
@@ -63,7 +59,7 @@ export interface DaHviSummaryDetail {
   note: string;
 }
 
-const DISPLAY_SCALING_NOTE =
+export const DA_COMPONENT_DISPLAY_SCALING_NOTE =
   "Mini bars use observed data ranges for comparison only. Map colors and legends use clipped display ranges for stronger contrast.";
 
 const COMPONENT_SPECS: readonly ComponentSpec[] = [
@@ -72,8 +68,6 @@ const COMPONENT_SPECS: readonly ComponentSpec[] = [
     title: "Exposure (E)",
     shortTitle: "E",
     scoreMetricId: "exposure_index",
-    formula: "E = 0.67 * exposure_mean_n01 + 0.33 * hardscape_frac_n01",
-    notes: ["67% temperature", "33% hardscape", DISPLAY_SCALING_NOTE],
     previewSegments: [
       { label: "Temperature", weight: 0.67, paletteId: "heat" },
       { label: "Hardscape", weight: 0.33, paletteId: "built" },
@@ -101,9 +95,6 @@ const COMPONENT_SPECS: readonly ComponentSpec[] = [
     title: "Sensitivity (S)",
     shortTitle: "S",
     scoreMetricId: "sensitivity_index",
-    formula:
-      "S = mean(unemployment_rate_n01, low_income_rate_n01, pct_seniors_65plus_n01, pct_living_alone_n01)",
-    notes: ["4 equal contributors", DISPLAY_SCALING_NOTE],
     previewSegments: [
       { label: "Unemployment", weight: 0.25, paletteId: "social" },
       { label: "Low income", weight: 0.25, paletteId: "social" },
@@ -127,9 +118,6 @@ const COMPONENT_SPECS: readonly ComponentSpec[] = [
     title: "Adaptive Capacity (A)",
     shortTitle: "A",
     scoreMetricId: "adaptive_capacity_index",
-    formula:
-      "A = mean(green_capacity_n01, renter_capacity_n01, major_repairs_capacity_n01, core_need_capacity_n01)",
-    notes: ["4 equal contributors", DISPLAY_SCALING_NOTE],
     previewSegments: [
       { label: "Green", weight: 0.25, paletteId: "adaptive" },
       { label: "Renters", weight: 0.25, paletteId: "housing" },
@@ -186,8 +174,6 @@ export function getDaComponentDetailCards(
       title: component.title,
       shortTitle: component.shortTitle,
       scoreValue: formatMetricValue(scoreMetric, da[scoreMetric.propertyKey]),
-      formula: component.formula,
-      notes: component.notes,
       previewSegments: component.previewSegments,
       sections: component.sections.map((section) => ({
         title: section.title,

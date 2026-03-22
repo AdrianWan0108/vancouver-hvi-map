@@ -20,9 +20,9 @@ function makeRegion(munNum: number, name = `Region ${munNum}`): RegionFeaturePro
 }
 
 describe("mapUiReducer", () => {
-  it("defaults to showing peripheral regions", () => {
+  it("defaults to hiding peripheral areas", () => {
     const initial = createInitialMapUiState();
-    expect(initial.showPeripheralAreas).toBe(true);
+    expect(initial.showPeripheralAreas).toBe(false);
     expect(initial.filters.hvi_index_n01.min).toBe(0.06462950439663971);
     expect(initial.filters.hvi_index_n01.max).toBe(0.733616020899424);
   });
