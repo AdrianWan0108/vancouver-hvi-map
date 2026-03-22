@@ -16,7 +16,7 @@ import type {
   FeatureId,
   RegionFeatureProperties,
 } from "../types/data";
-import type { SearchBounds, SearchEntry } from "../types/search";
+import type { SearchBounds, SearchResult } from "../types/search";
 import { formatMetricValue, formatScore } from "../utils/format";
 import { getRegionDisplayName } from "../utils/region";
 import {
@@ -882,12 +882,17 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
     state.zoomMode,
   ]);
 
-  const focusSearchResult = useCallback((entry: SearchEntry) => {
+  const focusSearchResult = useCallback((entry: SearchResult) => {
     const map = mapRef.current;
     if (!map) return;
 
     tooltipRef.current?.remove();
     map.getCanvas().style.cursor = "";
+
+    if (entry.kind === "address") {
+      map.flyTo({ center: entry.center, zoom: 15, essential: true });
+      return;
+    }
 
     const padding = { top: 72, right: 40, bottom: 40, left: 40 };
     const bounds = toLngLatBounds(entry.bbox);

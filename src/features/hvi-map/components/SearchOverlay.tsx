@@ -4,21 +4,54 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { SearchEntry, SearchIndex } from "../types/search";
 import { getSearchResults, loadSearchIndex } from "../search";
+import {
+  BC_GEOCODER_MIN_QUERY_LENGTH,
+  searchBcAddressGeocoder,
+} from "../search/bcGeocoder";
 import {
   derivePeripheralAreaMetadata,
   isPeripheralSearchEntry,
 } from "../search/peripheralAreas";
 import { useMapDispatch } from "../state/useMapDispatch";
 import { useMapUiState } from "../state/useMapUiState";
+import type { AddressSearchResult, SearchIndex, SearchResult } from "../types/search";
 
 interface SearchOverlayProps {
-  onSelectResult: (entry: SearchEntry) => void;
+  onSelectResult: (entry: SearchResult) => void;
 }
 
-function ResultKindBadge({ kind }: { kind: SearchEntry["kind"] }) {
+function ResultKindBadge({ kind }: { kind: SearchResult["kind"] }) {
+  if (kind === "address") {
+    return <Badge variant="secondary">Place</Badge>;
+  }
+
   return <Badge variant="secondary">{kind === "region" ? "Region" : "DA"}</Badge>;
+}
+
+function ResultButton({
+  result,
+  onSelect,
+}: {
+  result: SearchResult;
+  onSelect: (entry: SearchResult) => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="grid gap-1 px-4 py-3 text-left transition-colors hover:bg-accent/60"
+      onMouseDown={(event) => event.preventDefault()}
+      onClick={() => onSelect(result)}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-medium">{result.label}</p>
+        <ResultKindBadge kind={result.kind} />
+      </div>
+      {result.secondaryLabel ? (
+        <p className="text-xs text-muted-foreground">{result.secondaryLabel}</p>
+      ) : null}
+    </button>
+  );
 }
 
 export default function SearchOverlay({ onSelectResult }: SearchOverlayProps) {
@@ -27,7 +60,10 @@ export default function SearchOverlay({ onSelectResult }: SearchOverlayProps) {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [searchIndex, setSearchIndex] = useState<SearchIndex | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [indexLoadError, setIndexLoadError] = useState<string | null>(null);
+  const [addressResults, setAddressResults] = useState<AddressSearchResult[]>([]);
+  const [addressError, setAddressError] = useState<string | null>(null);
+  const [isSearchingAddresses, setIsSearchingAddresses] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -37,11 +73,13 @@ export default function SearchOverlay({ onSelectResult }: SearchOverlayProps) {
       .then((index) => {
         if (cancelled) return;
         setSearchIndex(index);
-        setLoadError(null);
+        setIndexLoadError(null);
       })
       .catch((error: unknown) => {
         if (cancelled) return;
-        setLoadError(error instanceof Error ? error.message : "Unable to load search index.");
+        setIndexLoadError(
+          error instanceof Error ? error.message : "Unable to load search index."
+        );
       });
 
     return () => {
@@ -60,7 +98,7 @@ export default function SearchOverlay({ onSelectResult }: SearchOverlayProps) {
     return () => window.removeEventListener("pointerdown", handlePointerDown);
   }, []);
 
-  const results = useMemo(
+  const localResults = useMemo(
     () => getSearchResults(searchIndex?.entries ?? [], query),
     [query, searchIndex]
   );
@@ -68,10 +106,65 @@ export default function SearchOverlay({ onSelectResult }: SearchOverlayProps) {
     () => (searchIndex ? derivePeripheralAreaMetadata(searchIndex) : null),
     [searchIndex]
   );
+  const shouldSearchAddresses = query.trim().length >= BC_GEOCODER_MIN_QUERY_LENGTH;
+  const combinedResults = useMemo<SearchResult[]>(
+    () => [...localResults, ...addressResults],
+    [localResults, addressResults]
+  );
 
-  const showResults = isOpen && (results.length > 0 || Boolean(loadError) || query.trim().length >= 2);
+  useEffect(() => {
+    if (!shouldSearchAddresses) return undefined;
 
-  const handleSelect = (entry: SearchEntry) => {
+    let cancelled = false;
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      setIsSearchingAddresses(true);
+
+      searchBcAddressGeocoder(query, { signal: controller.signal })
+        .then((remoteResults) => {
+          if (cancelled) return;
+          setAddressResults(remoteResults);
+          setAddressError(null);
+        })
+        .catch((error: unknown) => {
+          if (cancelled || controller.signal.aborted) return;
+          setAddressResults([]);
+          setAddressError(
+            error instanceof Error
+              ? error.message
+              : "Place and address search is unavailable right now."
+          );
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setIsSearchingAddresses(false);
+          }
+        });
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [query, shouldSearchAddresses]);
+
+  const showResults =
+    isOpen &&
+    (combinedResults.length > 0 ||
+      Boolean(indexLoadError) ||
+      Boolean(addressError) ||
+      isSearchingAddresses ||
+      query.trim().length >= 2);
+
+  const handleSelect = (entry: SearchResult) => {
+    if (entry.kind === "address") {
+      setQuery(entry.label);
+      setIsOpen(false);
+      onSelectResult(entry);
+      return;
+    }
+
     if (
       !uiState.showPeripheralAreas &&
       peripheralMetadata &&
@@ -100,24 +193,27 @@ export default function SearchOverlay({ onSelectResult }: SearchOverlayProps) {
 
   return (
     <div className="pointer-events-none absolute inset-x-0 top-4 z-20 flex justify-center px-4">
-      <div
-        ref={containerRef}
-        className="pointer-events-auto w-full max-w-xl"
-      >
+      <div ref={containerRef} className="pointer-events-auto w-full max-w-xl">
         <div className="rounded-2xl border border-border/80 bg-background/95 shadow-lg backdrop-blur">
           <div className="relative">
             <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={query}
               onChange={(event) => {
-                setQuery(event.target.value);
+                const nextQuery = event.target.value;
+                setQuery(nextQuery);
                 setIsOpen(true);
+                setAddressResults([]);
+                setAddressError(null);
+                setIsSearchingAddresses(
+                  nextQuery.trim().length >= BC_GEOCODER_MIN_QUERY_LENGTH
+                );
               }}
               onFocus={() => setIsOpen(true)}
               onKeyDown={(event) => {
-                if (event.key === "Enter" && results[0]) {
+                if (event.key === "Enter" && combinedResults[0]) {
                   event.preventDefault();
-                  handleSelect(results[0]);
+                  handleSelect(combinedResults[0]);
                 }
 
                 if (event.key === "Escape") {
@@ -126,10 +222,10 @@ export default function SearchOverlay({ onSelectResult }: SearchOverlayProps) {
               }}
               placeholder={
                 searchIndex
-                  ? "Search by region name or DAUID"
+                  ? "Search by region, DAUID, place, or address"
                   : "Loading region and DA search..."
               }
-              disabled={!searchIndex && !loadError}
+              disabled={!searchIndex && !indexLoadError}
               className="h-11 rounded-2xl border-0 bg-transparent pr-11 pl-10 text-sm shadow-none focus-visible:ring-0"
             />
             {query ? (
@@ -140,6 +236,9 @@ export default function SearchOverlay({ onSelectResult }: SearchOverlayProps) {
                 className="absolute top-1/2 right-2 -translate-y-1/2"
                 onClick={() => {
                   setQuery("");
+                  setAddressResults([]);
+                  setAddressError(null);
+                  setIsSearchingAddresses(false);
                   setIsOpen(false);
                 }}
               >
@@ -152,35 +251,61 @@ export default function SearchOverlay({ onSelectResult }: SearchOverlayProps) {
           {showResults ? (
             <div className="border-t border-border/80">
               <ScrollArea className="max-h-72">
-                {loadError ? (
-                  <p className="px-4 py-3 text-sm text-muted-foreground">{loadError}</p>
-                ) : results.length === 0 ? (
-                  <p className="px-4 py-3 text-sm text-muted-foreground">
-                    No matching regions or DAUIDs.
-                  </p>
-                ) : (
+                {indexLoadError ? (
+                  <p className="px-4 pt-3 text-sm text-muted-foreground">{indexLoadError}</p>
+                ) : null}
+
+                {localResults.length > 0 ? (
                   <div className="grid">
-                    {results.map((result) => (
-                      <button
+                    <p className="px-4 pt-3 pb-1 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                      Regions &amp; DAs
+                    </p>
+                    {localResults.map((result) => (
+                      <ResultButton
                         key={`${result.kind}:${result.key}`}
-                        type="button"
-                        className="grid gap-1 px-4 py-3 text-left transition-colors hover:bg-accent/60"
-                        onMouseDown={(event) => event.preventDefault()}
-                        onClick={() => handleSelect(result)}
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <p className="text-sm font-medium">{result.label}</p>
-                          <ResultKindBadge kind={result.kind} />
-                        </div>
-                        {result.secondaryLabel ? (
-                          <p className="text-xs text-muted-foreground">
-                            {result.secondaryLabel}
-                          </p>
-                        ) : null}
-                      </button>
+                        result={result}
+                        onSelect={handleSelect}
+                      />
                     ))}
                   </div>
-                )}
+                ) : null}
+
+                {shouldSearchAddresses ? (
+                  <div className="grid">
+                    <p className="px-4 pt-3 pb-1 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                      Places &amp; Addresses
+                    </p>
+
+                    {addressResults.map((result) => (
+                      <ResultButton
+                        key={`${result.kind}:${result.key}`}
+                        result={result}
+                        onSelect={handleSelect}
+                      />
+                    ))}
+
+                    {isSearchingAddresses ? (
+                      <p className="px-4 py-3 text-sm text-muted-foreground">
+                        Searching places and addresses...
+                      </p>
+                    ) : null}
+
+                    {!isSearchingAddresses && addressResults.length === 0 && addressError ? (
+                      <p className="px-4 py-3 text-sm text-muted-foreground">{addressError}</p>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                {!indexLoadError &&
+                combinedResults.length === 0 &&
+                !isSearchingAddresses &&
+                !addressError ? (
+                  <p className="px-4 py-3 text-sm text-muted-foreground">
+                    {shouldSearchAddresses
+                      ? "No matching regions, DAUIDs, places, or addresses."
+                      : "No matching regions or DAUIDs. Keep typing for place/address search."}
+                  </p>
+                ) : null}
               </ScrollArea>
             </div>
           ) : null}
