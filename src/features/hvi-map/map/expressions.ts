@@ -8,8 +8,8 @@ export type MapExpression = boolean | ExpressionSpecification;
 
 type FillMetricConfig = {
   propertyKey: string;
-  colorDomainMin: number;
-  colorDomainMax: number;
+  displayDomainMin: number;
+  displayDomainMax: number;
   paletteId: MetricPaletteId;
 };
 
@@ -54,22 +54,23 @@ function buildClampedValueExpression(
 
 function buildPaletteExpression({
   propertyKey,
-  colorDomainMin,
-  colorDomainMax,
+  displayDomainMin,
+  displayDomainMax,
   paletteId,
 }: FillMetricConfig): ExpressionSpecification {
-  const midpoint = colorDomainMin + (colorDomainMax - colorDomainMin) / 2;
+  const midpoint =
+    displayDomainMin + (displayDomainMax - displayDomainMin) / 2;
   const [lowColor, midColor, highColor] = getPaletteStops(paletteId);
 
   return [
     "interpolate",
     ["linear"],
-    buildClampedValueExpression(propertyKey, colorDomainMin, colorDomainMax),
-    colorDomainMin,
+    buildClampedValueExpression(propertyKey, displayDomainMin, displayDomainMax),
+    displayDomainMin,
     lowColor,
     midpoint,
     midColor,
-    colorDomainMax,
+    displayDomainMax,
     highColor,
   ] as ExpressionSpecification;
 }

@@ -233,6 +233,9 @@ export default function FilterMenu() {
 
         <ScrollArea className="max-h-[min(82vh,46rem)]">
           <div className="grid gap-3 p-3.5">
+            <p className="text-[11px] leading-4 text-muted-foreground">
+              Filters use full metric ranges. Map colors may use clipped display ranges for contrast.
+            </p>
             {groupedMetrics.map((group, groupIndex) => (
               <section key={group.id} className="grid gap-2">
                 <div className="flex items-center gap-2">

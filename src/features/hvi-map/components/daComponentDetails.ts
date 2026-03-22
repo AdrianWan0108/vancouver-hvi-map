@@ -64,7 +64,7 @@ export interface DaHviSummaryDetail {
 }
 
 const DISPLAY_SCALING_NOTE =
-  "Mini bars use current map display ranges for visual comparison only.";
+  "Mini bars use observed data ranges for comparison only. Map colors and legends use clipped display ranges for stronger contrast.";
 
 const COMPONENT_SPECS: readonly ComponentSpec[] = [
   {
