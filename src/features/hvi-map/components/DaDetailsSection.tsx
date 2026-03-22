@@ -28,6 +28,11 @@ import {
   type DaComponentDetailCard,
   type DaComponentId,
 } from "./daComponentDetails";
+import {
+  DETAIL_ROW_ANIMATION_STAGGER_MS,
+  formatAnimatedMetricValue,
+  getDetailRowAnimationProgress,
+} from "./daDetailAnimation";
 
 interface DaDetailsSectionProps {
   da: DaFeatureProperties;
@@ -267,33 +272,107 @@ function ContributionStrip({
 function IndicatorBarRow({
   label,
   value,
+  numericValue,
+  format,
   barPercent,
   paletteId,
+  animationKey,
+  rowIndex,
 }: {
   label: string;
   value: string;
+  numericValue: number | null;
+  format: DaComponentDetailCard["sections"][number]["rows"][number]["format"];
   barPercent: number;
   paletteId: DaComponentDetailCard["previewSegments"][number]["paletteId"];
+  animationKey: number;
+  rowIndex: number;
 }) {
   const palette = getPaletteConfig(paletteId);
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const [animatedProgress, setAnimatedProgress] = useState(() =>
+    prefersReducedMotion ? 1 : 0
+  );
+
+  useEffect(() => {
+    if (prefersReducedMotion) {
+      return undefined;
+    }
+
+    let frameId = 0;
+    const startTime = performance.now();
+    const delayMs = rowIndex * DETAIL_ROW_ANIMATION_STAGGER_MS;
+
+    const tick = (now: number) => {
+      const nextProgress = getDetailRowAnimationProgress({
+        elapsedMs: now - startTime,
+        delayMs,
+      });
+      setAnimatedProgress((current) =>
+        Math.abs(current - nextProgress) < 0.001 ? current : nextProgress
+      );
+
+      if (nextProgress < 1) {
+        frameId = window.requestAnimationFrame(tick);
+      }
+    };
+
+    frameId = window.requestAnimationFrame(tick);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [animationKey, prefersReducedMotion, rowIndex]);
+
+  const progress = prefersReducedMotion ? 1 : animatedProgress;
+  const animatedValue = formatAnimatedMetricValue({
+    format,
+    numericValue,
+    progress,
+    fallbackValue: value,
+  });
 
   return (
     <div className="grid gap-1">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 text-sm">
         <span className="text-muted-foreground">{label}</span>
-        <span className="font-medium text-card-foreground">{value}</span>
+        <span className="font-medium text-card-foreground">{animatedValue}</span>
       </div>
       <div className="h-1.5 overflow-hidden rounded-full bg-muted">
         <div
           className="h-full rounded-full"
           style={{
-            width: `${barPercent * 100}%`,
+            width: `${barPercent * progress * 100}%`,
             backgroundColor: palette.stops[1],
           }}
         />
       </div>
     </div>
   );
+}
+
+function usePrefersReducedMotion() {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() =>
+    typeof window !== "undefined" && typeof window.matchMedia === "function"
+      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      : false
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return undefined;
+    }
+
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const handleChange = (event: MediaQueryListEvent) => {
+      setPrefersReducedMotion(event.matches);
+    };
+
+    media.addEventListener("change", handleChange);
+    return () => media.removeEventListener("change", handleChange);
+  }, []);
+
+  return prefersReducedMotion;
 }
 
 function ComponentCardButton({
@@ -373,9 +452,11 @@ function ComponentCardButton({
 
 function ComponentDetailPanel({
   component,
+  animationKey,
   onClose,
 }: {
   component: DaComponentDetailCard;
+  animationKey: number;
   onClose?: () => void;
 }) {
   return (
@@ -418,25 +499,34 @@ function ComponentDetailPanel({
           </Tooltip>
         </TooltipProvider>
 
-        {component.sections.map((section, index) => (
+        {component.sections.map((section, index) => {
+          const rowStartIndex = component.sections
+            .slice(0, index)
+            .reduce((count, currentSection) => count + currentSection.rows.length, 0);
+
+          return (
           <div key={section.title} className="grid gap-3">
             {index > 0 ? <Separator /> : null}
             <div className="grid gap-3">
               <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
                 {section.title}
               </p>
-              {section.rows.map((row) => (
-                <IndicatorBarRow
-                  key={row.metricId}
-                  label={row.label}
-                  value={row.value}
-                  barPercent={row.barPercent}
-                  paletteId={row.paletteId}
-                />
+              {section.rows.map((row, rowIndex) => (
+                  <IndicatorBarRow
+                    key={`${animationKey}:${row.metricId}`}
+                    label={row.label}
+                    value={row.value}
+                    numericValue={row.numericValue}
+                    format={row.format}
+                    barPercent={row.barPercent}
+                    paletteId={row.paletteId}
+                    animationKey={animationKey}
+                    rowIndex={rowStartIndex + rowIndex}
+                  />
               ))}
             </div>
           </div>
-        ))}
+        )})}
       </CardContent>
     </Card>
   );
@@ -444,6 +534,7 @@ function ComponentDetailPanel({
 
 export default function DaDetailsSection({ da }: DaDetailsSectionProps) {
   const [openComponent, setOpenComponent] = useState<DaComponentId | null>(null);
+  const [detailAnimationKey, setDetailAnimationKey] = useState(0);
   const isDesktop = useIsDesktop();
   const rootRef = useRef<HTMLDivElement>(null);
   const summary = useMemo(() => getDaHviSummaryDetail(da), [da]);
@@ -460,7 +551,11 @@ export default function DaDetailsSection({ da }: DaDetailsSectionProps) {
       : components.find((component) => component.id === openComponent) ?? null;
 
   const toggleComponent = (componentId: DaComponentId) => {
-    setOpenComponent((current) => (current === componentId ? null : componentId));
+    const nextOpenComponent = openComponent === componentId ? null : componentId;
+    if (nextOpenComponent !== null) {
+      setDetailAnimationKey((current) => current + 1);
+    }
+    setOpenComponent(nextOpenComponent);
   };
 
   if (components.length === 0) {
@@ -546,7 +641,10 @@ export default function DaDetailsSection({ da }: DaDetailsSectionProps) {
                 onToggle={() => toggleComponent(component.id)}
               />
               {!isDesktop && openComponent === component.id ? (
-                <ComponentDetailPanel component={component} />
+                <ComponentDetailPanel
+                  component={component}
+                  animationKey={detailAnimationKey}
+                />
               ) : null}
             </div>
           ))}
@@ -557,6 +655,7 @@ export default function DaDetailsSection({ da }: DaDetailsSectionProps) {
         <div className="fixed top-24 left-[calc(24rem+0.75rem)] z-10 hidden w-[22rem] md:block">
           <ComponentDetailPanel
             component={activeComponent}
+            animationKey={detailAnimationKey}
             onClose={() => setOpenComponent(null)}
           />
         </div>

@@ -1,4 +1,9 @@
-import { DA_METRICS_BY_ID, type DaMetricId, type MetricPaletteId } from "../config/daMetrics";
+import {
+  DA_METRICS_BY_ID,
+  type DaMetricFormatId,
+  type DaMetricId,
+  type MetricPaletteId,
+} from "../config/daMetrics";
 import type { DaFeatureProperties } from "../types/data";
 import { formatMetricValue, formatScore, toNumber } from "../utils/format";
 
@@ -31,6 +36,8 @@ export interface DaComponentDetailRow {
   metricId: DaMetricId;
   label: string;
   value: string;
+  numericValue: number | null;
+  format: DaMetricFormatId;
   barPercent: number;
   paletteId: MetricPaletteId;
 }
@@ -185,6 +192,8 @@ export function getDaComponentDetailCards(
             metricId: row.metricId,
             label: row.label ?? metric.label,
             value: formatMetricValue(metric, rawValue),
+            numericValue: toNumber(rawValue),
+            format: metric.format,
             barPercent: toBarPercent(row.metricId, rawValue),
             paletteId: metric.paletteId,
           };
