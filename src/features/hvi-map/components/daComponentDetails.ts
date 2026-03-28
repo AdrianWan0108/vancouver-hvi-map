@@ -24,11 +24,6 @@ interface ComponentSpec {
   title: string;
   shortTitle: string;
   scoreMetricId: DaMetricId;
-  previewSegments: readonly {
-    label: string;
-    weight: number;
-    paletteId: MetricPaletteId;
-  }[];
   sections: readonly ComponentSectionSpec[];
 }
 
@@ -52,11 +47,8 @@ export interface DaComponentDetailCard {
   title: string;
   shortTitle: string;
   scoreValue: string;
-  previewSegments: readonly {
-    label: string;
-    weight: number;
-    paletteId: MetricPaletteId;
-  }[];
+  scoreNumericValue: number;
+  compactPreviewPaletteId: MetricPaletteId;
   sections: DaComponentDetailSection[];
 }
 
@@ -75,10 +67,6 @@ const COMPONENT_SPECS: readonly ComponentSpec[] = [
     title: "Exposure (E)",
     shortTitle: "E",
     scoreMetricId: "exposure_index",
-    previewSegments: [
-      { label: "Temperature", weight: 0.67, paletteId: "heat" },
-      { label: "Hardscape", weight: 0.33, paletteId: "built" },
-    ],
     sections: [
       {
         title: "Primary inputs",
@@ -102,12 +90,6 @@ const COMPONENT_SPECS: readonly ComponentSpec[] = [
     title: "Sensitivity (S)",
     shortTitle: "S",
     scoreMetricId: "sensitivity_index",
-    previewSegments: [
-      { label: "Unemployment", weight: 0.25, paletteId: "social" },
-      { label: "Low income", weight: 0.25, paletteId: "social" },
-      { label: "Seniors 65+", weight: 0.25, paletteId: "social" },
-      { label: "Living alone", weight: 0.25, paletteId: "social" },
-    ],
     sections: [
       {
         title: "Equal contributors",
@@ -125,12 +107,6 @@ const COMPONENT_SPECS: readonly ComponentSpec[] = [
     title: "Adaptive Capacity (A)",
     shortTitle: "A",
     scoreMetricId: "adaptive_capacity_index",
-    previewSegments: [
-      { label: "Green", weight: 0.25, paletteId: "adaptive" },
-      { label: "Renters", weight: 0.25, paletteId: "housing" },
-      { label: "Repairs", weight: 0.25, paletteId: "housing" },
-      { label: "Core need", weight: 0.25, paletteId: "housing" },
-    ],
     sections: [
       {
         title: "Primary inputs",
@@ -181,7 +157,8 @@ export function getDaComponentDetailCards(
       title: component.title,
       shortTitle: component.shortTitle,
       scoreValue: formatMetricValue(scoreMetric, da[scoreMetric.propertyKey]),
-      previewSegments: component.previewSegments,
+      scoreNumericValue: Math.max(0, Math.min(1, toNumber(da[scoreMetric.propertyKey]) ?? 0)),
+      compactPreviewPaletteId: scoreMetric.paletteId,
       sections: component.sections.map((section) => ({
         title: section.title,
         rows: section.rows.map((row) => {

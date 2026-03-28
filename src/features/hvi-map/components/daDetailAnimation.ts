@@ -3,6 +3,7 @@ import { formatValueByFormat } from "../utils/format";
 
 export const DETAIL_ROW_ANIMATION_DURATION_MS = 650;
 export const DETAIL_ROW_ANIMATION_STAGGER_MS = 50;
+export const COMPACT_CARD_BAR_ANIMATION_DURATION_MS = 260;
 
 function clamp01(value: number): number {
   if (value <= 0) return 0;
@@ -55,4 +56,17 @@ export function formatAnimatedMetricValue({
   const animatedValue = numericValue * clampedProgress;
   const displayValue = format === "integer" ? Math.round(animatedValue) : animatedValue;
   return formatValueByFormat(format, displayValue);
+}
+
+export function interpolateAnimatedValue({
+  start,
+  end,
+  progress,
+}: {
+  start: number;
+  end: number;
+  progress: number;
+}): number {
+  const clampedProgress = clamp01(progress);
+  return start + (end - start) * clampedProgress;
 }

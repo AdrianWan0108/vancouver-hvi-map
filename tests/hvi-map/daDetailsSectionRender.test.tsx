@@ -56,6 +56,13 @@ describe("DaDetailsSection", () => {
     expect(screen.getByText("Exposure (E)")).toBeInTheDocument();
     expect(screen.getByText("Sensitivity (S)")).toBeInTheDocument();
     expect(screen.getByText("Adaptive Capacity (A)")).toBeInTheDocument();
+    expect(screen.getAllByText("Normalized value")).toHaveLength(3);
+    expect(
+      screen.getByRole("progressbar", { name: /Exposure \(E\) normalized value/i })
+    ).toBeInTheDocument();
+    expect(screen.queryByText("67% Temperature")).not.toBeInTheDocument();
+    expect(screen.queryByText("25% Living alone")).not.toBeInTheDocument();
+    expect(screen.queryByText("25% Green")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Explain HVI summary/i })).toBeInTheDocument();
     expect(
       screen.queryByText("Display bars use current map display ranges for visual comparison only.")

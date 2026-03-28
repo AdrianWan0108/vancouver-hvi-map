@@ -48,10 +48,8 @@ describe("DA component detail helpers", () => {
       "Adaptive Capacity (A)",
     ]);
 
-    expect(cards[0].previewSegments.map((segment) => segment.paletteId)).toEqual([
-      "heat",
-      "built",
-    ]);
+    expect(cards[0].compactPreviewPaletteId).toBe("heat");
+    expect(cards[0].scoreNumericValue).toBe(0.725);
     expect(cards[0].sections[0].rows.map((row) => row.metricId)).toEqual([
       "exposure_mean",
       "hardscape_frac",
@@ -62,9 +60,8 @@ describe("DA component detail helpers", () => {
       "frac_other_built",
     ]);
 
-    expect(cards[1].previewSegments.every((segment) => segment.paletteId === "social")).toBe(
-      true
-    );
+    expect(cards[1].compactPreviewPaletteId).toBe("social");
+    expect(cards[1].scoreNumericValue).toBe(0.127);
     expect(cards[1].sections[0].rows.map((row) => row.metricId)).toEqual([
       "unemployment_rate",
       "low_income_rate",
@@ -78,12 +75,8 @@ describe("DA component detail helpers", () => {
       "pct_major_repairs",
       "pct_core_need",
     ]);
-    expect(cards[2].previewSegments.map((segment) => segment.paletteId)).toEqual([
-      "adaptive",
-      "housing",
-      "housing",
-      "housing",
-    ]);
+    expect(cards[2].compactPreviewPaletteId).toBe("adaptive");
+    expect(cards[2].scoreNumericValue).toBe(0.646);
     expect(cards[2].sections[1].rows.map((row) => row.metricId)).toEqual([
       "frac_coniferous",
       "frac_deciduous",

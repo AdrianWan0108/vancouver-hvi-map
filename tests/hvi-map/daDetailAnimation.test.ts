@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  COMPACT_CARD_BAR_ANIMATION_DURATION_MS,
   DETAIL_ROW_ANIMATION_DURATION_MS,
   easeOutCubic,
   formatAnimatedMetricValue,
   getDetailRowAnimationProgress,
+  interpolateAnimatedValue,
 } from "../../src/features/hvi-map/components/daDetailAnimation";
 
 describe("DA detail animation helpers", () => {
@@ -61,5 +63,31 @@ describe("DA detail animation helpers", () => {
         fallbackValue: "0.612",
       })
     ).toBe("0.612");
+  });
+
+  it("interpolates compact preview bar values across the eased animation progress", () => {
+    const progress = getDetailRowAnimationProgress({
+      elapsedMs: COMPACT_CARD_BAR_ANIMATION_DURATION_MS / 2,
+      delayMs: 0,
+      durationMs: COMPACT_CARD_BAR_ANIMATION_DURATION_MS,
+    });
+
+    expect(interpolateAnimatedValue({ start: 0.725, end: 0.541, progress: 0 })).toBe(
+      0.725
+    );
+    expect(interpolateAnimatedValue({ start: 0.725, end: 0.541, progress: 1 })).toBe(
+      0.541
+    );
+    expect(progress).toBeGreaterThan(0);
+    expect(progress).toBeLessThan(1);
+
+    const interpolatedValue = interpolateAnimatedValue({
+      start: 0.725,
+      end: 0.541,
+      progress,
+    });
+
+    expect(interpolatedValue).toBeLessThan(0.725);
+    expect(interpolatedValue).toBeGreaterThan(0.541);
   });
 });

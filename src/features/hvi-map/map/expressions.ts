@@ -253,3 +253,15 @@ export function buildLineWidthExpression(
     defaultWidth,
   ] as ExpressionSpecification;
 }
+
+export function buildLineOpacityExpression(
+  hoveredOpacity: number,
+  defaultOpacity: number
+): ExpressionSpecification {
+  return [
+    "case",
+    ["boolean", ["feature-state", "hover"], false],
+    hoveredOpacity,
+    defaultOpacity,
+  ] as ExpressionSpecification;
+}

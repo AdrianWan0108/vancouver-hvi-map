@@ -29,9 +29,11 @@ import {
   type DaComponentId,
 } from "./daComponentDetails";
 import {
+  COMPACT_CARD_BAR_ANIMATION_DURATION_MS,
   DETAIL_ROW_ANIMATION_STAGGER_MS,
   formatAnimatedMetricValue,
   getDetailRowAnimationProgress,
+  interpolateAnimatedValue,
 } from "./daDetailAnimation";
 
 interface DaDetailsSectionProps {
@@ -54,7 +56,7 @@ const PANEL_DENSITY_STYLES = {
     chevron: "size-3.5",
     scoreValue: "text-base",
     cardContent: "gap-1.5 px-4 py-2",
-    chipRow: "gap-1 pb-0.5",
+    scaleRow: "text-[10px]",
   },
   compact: {
     outerGap: "gap-3",
@@ -71,7 +73,7 @@ const PANEL_DENSITY_STYLES = {
     chevron: "size-3.5",
     scoreValue: "text-base",
     cardContent: "gap-1.5 px-4 py-1.5",
-    chipRow: "gap-1 pb-0.5",
+    scaleRow: "text-[10px]",
   },
   ultra: {
     outerGap: "gap-2.5",
@@ -88,7 +90,7 @@ const PANEL_DENSITY_STYLES = {
     chevron: "size-3",
     scoreValue: "text-[15px]",
     cardContent: "gap-1 px-4 py-1.5",
-    chipRow: "gap-1 pb-0",
+    scaleRow: "text-[10px]",
   },
 } satisfies Record<
   PanelDensity,
@@ -107,7 +109,7 @@ const PANEL_DENSITY_STYLES = {
     chevron: string;
     scoreValue: string;
     cardContent: string;
-    chipRow: string;
+    scaleRow: string;
   }
 >;
 
@@ -243,32 +245,6 @@ function Section({
   );
 }
 
-function ContributionStrip({
-  segments,
-}: {
-  segments: DaComponentDetailCard["previewSegments"];
-}) {
-  return (
-    <div className="overflow-hidden rounded-full border border-border/70 bg-muted/50">
-      <div className="flex h-2.5 w-full">
-        {segments.map((segment) => {
-          const palette = getPaletteConfig(segment.paletteId);
-          return (
-            <div
-              key={segment.label}
-              className="h-full border-r border-background/70 last:border-r-0"
-              style={{
-                width: `${segment.weight * 100}%`,
-                backgroundColor: palette.stops[1],
-              }}
-            />
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 function IndicatorBarRow({
   label,
   value,
@@ -284,7 +260,7 @@ function IndicatorBarRow({
   numericValue: number | null;
   format: DaComponentDetailCard["sections"][number]["rows"][number]["format"];
   barPercent: number;
-  paletteId: DaComponentDetailCard["previewSegments"][number]["paletteId"];
+  paletteId: DaComponentDetailCard["sections"][number]["rows"][number]["paletteId"];
   animationKey: number;
   rowIndex: number;
 }) {
@@ -375,6 +351,68 @@ function usePrefersReducedMotion() {
   return prefersReducedMotion;
 }
 
+function useAnimatedCompactScore(score: number) {
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const [animatedScore, setAnimatedScore] = useState(score);
+  const animatedScoreRef = useRef(score);
+  const targetScoreRef = useRef(score);
+
+  useEffect(() => {
+    animatedScoreRef.current = animatedScore;
+  }, [animatedScore]);
+
+  useEffect(() => {
+    if (prefersReducedMotion) {
+      let syncFrameId = 0;
+      syncFrameId = window.requestAnimationFrame(() => {
+        animatedScoreRef.current = score;
+        targetScoreRef.current = score;
+        setAnimatedScore(score);
+      });
+      return () => {
+        window.cancelAnimationFrame(syncFrameId);
+      };
+    }
+
+    if (Math.abs(targetScoreRef.current - score) < 0.0005) {
+      return undefined;
+    }
+
+    const startScore = animatedScoreRef.current;
+    const endScore = score;
+    targetScoreRef.current = endScore;
+    let frameId = 0;
+    const startTime = performance.now();
+
+    const tick = (now: number) => {
+      const progress = getDetailRowAnimationProgress({
+        elapsedMs: now - startTime,
+        delayMs: 0,
+        durationMs: COMPACT_CARD_BAR_ANIMATION_DURATION_MS,
+      });
+      const nextScore = interpolateAnimatedValue({
+        start: startScore,
+        end: endScore,
+        progress,
+      });
+      animatedScoreRef.current = nextScore;
+      setAnimatedScore(nextScore);
+
+      if (progress < 1) {
+        frameId = window.requestAnimationFrame(tick);
+      }
+    };
+
+    frameId = window.requestAnimationFrame(tick);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [prefersReducedMotion, score]);
+
+  return prefersReducedMotion ? score : animatedScore;
+}
+
 function ComponentCardButton({
   component,
   density,
@@ -387,6 +425,8 @@ function ComponentCardButton({
   onToggle: () => void;
 }) {
   const styles = PANEL_DENSITY_STYLES[density];
+  const palette = getPaletteConfig(component.compactPreviewPaletteId);
+  const animatedScore = useAnimatedCompactScore(component.scoreNumericValue);
 
   return (
     <button
@@ -427,22 +467,31 @@ function ComponentCardButton({
         </CardHeader>
         <Separator />
         <CardContent className={cn("grid", styles.cardContent)}>
-          <ContributionStrip segments={component.previewSegments} />
+          <div
+            role="progressbar"
+            aria-label={`${component.title} normalized value`}
+            aria-valuemin={0}
+            aria-valuemax={1}
+            aria-valuenow={Number(animatedScore.toFixed(3))}
+            className="h-2.5 overflow-hidden rounded-full border border-border/70 bg-muted/50"
+          >
+            <div
+              className="h-full rounded-full"
+              style={{
+                width: `${animatedScore * 100}%`,
+                backgroundColor: palette.stops[1],
+              }}
+            />
+          </div>
           <div
             className={cn(
-              "flex flex-wrap",
-              styles.chipRow
+              "grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 text-muted-foreground",
+              styles.scaleRow
             )}
           >
-            {component.previewSegments.map((segment) => (
-              <Badge
-                key={segment.label}
-                variant="secondary"
-                className="shrink-0 px-1.5 py-0 text-[10px]"
-              >
-                {Math.round(segment.weight * 100)}% {segment.label}
-              </Badge>
-            ))}
+            <span>0</span>
+            <span className="text-center">Normalized value</span>
+            <span className="text-right">1</span>
           </div>
         </CardContent>
       </Card>

@@ -18,13 +18,14 @@ export default function ViewOptionsSection({
   onShowPeripheralAreasChange,
 }: ViewOptionsSectionProps) {
   return (
-    <div className="flex items-center justify-between rounded-xl border bg-muted/30 px-3 py-2.5">
+    <div className="flex items-center justify-between rounded-xl border bg-muted/30 px-2.5 py-2">
       <Label
         htmlFor="show-peripheral-areas"
-        className="flex min-w-0 items-center gap-2.5 text-sm font-medium"
+        className="flex min-w-0 items-center gap-2 text-[13px] font-medium"
       >
         <Checkbox
           id="show-peripheral-areas"
+          className="h-3.5 w-3.5"
           checked={showPeripheralAreas}
           onChange={(event) =>
             onShowPeripheralAreasChange(event.currentTarget.checked)
@@ -38,10 +39,10 @@ export default function ViewOptionsSection({
           <TooltipTrigger asChild>
             <button
               type="button"
-              className="inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] focus-visible:outline-none"
+              className="inline-flex size-[1.375rem] shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] focus-visible:outline-none"
               aria-label="About peripheral areas"
             >
-              <CircleHelpIcon className="size-3.5" />
+              <CircleHelpIcon className="size-[0.8125rem]" />
             </button>
           </TooltipTrigger>
           <TooltipContent side="top" className="max-w-72">

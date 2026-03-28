@@ -4,11 +4,11 @@ import type { MapGeoJSONFeature, MapLayerMouseEvent, MapMouseEvent } from "mapli
 import { PMTiles, Protocol } from "pmtiles";
 import { DA_METRICS_BY_ID, DEFAULT_DA_METRIC_ID } from "../config/daMetrics";
 import {
+  METRO_VANCOUVER_DEFAULT_VIEW_BOUNDS,
   PERIPHERAL_REGION_MANUAL_EXCLUDE_KEYS,
   PERIPHERAL_REGION_MANUAL_INCLUDE_KEYS,
   PERIPHERAL_REGION_POPULATION_THRESHOLD,
   REGION_HVI_METRIC,
-  VANCOUVER_CENTER,
   ZOOM_DA,
 } from "../config/regionConfig";
 import type {
@@ -27,6 +27,7 @@ import {
   buildFillColorExpression,
   buildFilterExpression,
   buildLockedFeatureFilterExpression,
+  buildLineOpacityExpression,
   combineFilterExpressions,
   buildLineWidthExpression,
   buildRegionVisibilityFilterExpression,
@@ -145,6 +146,10 @@ function toLngLatBounds(bounds: SearchBounds): [[number, number], [number, numbe
   ];
 }
 
+function getInitialViewportPadding() {
+  return { top: 72, right: 40, bottom: 40, left: 40 };
+}
+
 export function useMapController(containerRef: RefObject<HTMLDivElement | null>) {
   const state = useMapUiState();
   const dispatch = useMapDispatch();
@@ -194,12 +199,18 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
     const regionsPmtiles = new PMTiles(pmtilesUrls.regions);
     protocol.add(daPmtiles);
     protocol.add(regionsPmtiles);
+    const initialBounds = toLngLatBounds(METRO_VANCOUVER_DEFAULT_VIEW_BOUNDS);
+    const initialPadding = getInitialViewportPadding();
 
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
-      center: VANCOUVER_CENTER,
-      zoom: 9.5,
+      bounds: initialBounds,
+      fitBoundsOptions: {
+        padding: initialPadding,
+        maxZoom: ZOOM_DA - 0.8,
+        duration: 0,
+      },
       attributionControl: false,
     });
 
@@ -580,8 +591,12 @@ export function useMapController(containerRef: RefObject<HTMLDivElement | null>)
           minzoom: ZOOM_DA,
           ...(daPeripheralFilter === true ? {} : { filter: daPeripheralFilter }),
           paint: {
-            "line-width": buildLineWidthExpression(1.6, 0.6),
-            "line-opacity": 0.2,
+            "line-color": LOCKED_DA_OUTLINE_STYLE.color,
+            "line-width": buildLineWidthExpression(3, 0.6),
+            "line-opacity": buildLineOpacityExpression(
+              LOCKED_DA_OUTLINE_STYLE.opacity,
+              0.2
+            ),
           },
         }, beforeLabelLayerId);
 
