@@ -3,7 +3,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type ReactNode,
   type RefObject,
 } from "react";
 import { ChevronRightIcon, CircleHelpIcon, XIcon } from "lucide-react";
@@ -20,6 +19,7 @@ import {
 import { cn } from "@/lib/utils";
 import { getPaletteConfig } from "../config/palettes";
 import type { DaFeatureProperties } from "../types/data";
+import { formatInteger } from "../utils/format";
 import { resolvePanelDensity, type PanelDensity } from "./daDetailsDensity";
 import {
   DA_COMPONENT_DISPLAY_SCALING_NOTE,
@@ -38,57 +38,58 @@ import {
 
 interface DaDetailsSectionProps {
   da: DaFeatureProperties;
+  regionName?: string | null;
 }
 
 const PANEL_DENSITY_STYLES = {
   comfortable: {
-    outerGap: "gap-3",
+    outerGap: "gap-4",
     cardsGap: "gap-3",
     cardItemGap: "gap-2",
     sectionHeader: "px-4 py-1.5",
-    sectionContent: "gap-1.5 px-4 py-1.5",
+    sectionContent: "gap-1.5 px-4 pt-1 pb-0.5",
     summaryStack: "gap-1.5",
     summaryRow: "gap-2",
-    summaryValue: "text-xl",
-    summaryText: "text-[11px] leading-4",
+    summaryValue: "text-[1.7rem]",
+    summaryText: "text-[10px] leading-4",
     cardHeader: "px-4 py-2",
     cardHeaderGap: "gap-3",
     chevron: "size-3.5",
-    scoreValue: "text-base",
+    scoreValue: "text-[15px]",
     cardContent: "gap-1.5 px-4 py-2",
     scaleRow: "text-[10px]",
   },
   compact: {
-    outerGap: "gap-3",
+    outerGap: "gap-4",
     cardsGap: "gap-3",
     cardItemGap: "gap-1.5",
     sectionHeader: "px-4 py-1.5",
-    sectionContent: "gap-1.5 px-4 py-1.5",
+    sectionContent: "gap-1.5 px-4 pt-1 pb-0.5",
     summaryStack: "gap-1.5",
     summaryRow: "gap-1.5",
-    summaryValue: "text-xl",
-    summaryText: "text-[11px] leading-4",
+    summaryValue: "text-[1.7rem]",
+    summaryText: "text-[10px] leading-4",
     cardHeader: "px-4 py-2",
     cardHeaderGap: "gap-2.5",
     chevron: "size-3.5",
-    scoreValue: "text-base",
+    scoreValue: "text-[15px]",
     cardContent: "gap-1.5 px-4 py-1.5",
     scaleRow: "text-[10px]",
   },
   ultra: {
-    outerGap: "gap-2.5",
+    outerGap: "gap-3",
     cardsGap: "gap-2.5",
     cardItemGap: "gap-1.5",
     sectionHeader: "px-4 py-1",
-    sectionContent: "gap-1 px-4 py-1",
+    sectionContent: "gap-1 px-4 pt-0.5 pb-0.5",
     summaryStack: "gap-1",
     summaryRow: "gap-1",
-    summaryValue: "text-lg",
-    summaryText: "text-[11px] leading-4",
+    summaryValue: "text-[1.45rem]",
+    summaryText: "text-[10px] leading-4",
     cardHeader: "px-4 py-1.5",
     cardHeaderGap: "gap-2",
     chevron: "size-3",
-    scoreValue: "text-[15px]",
+    scoreValue: "text-sm",
     cardContent: "gap-1 px-4 py-1.5",
     scaleRow: "text-[10px]",
   },
@@ -213,35 +214,31 @@ function usePanelDensity({
   );
 }
 
-function Section({
-  title,
-  density,
-  headerAction,
-  children,
+function SelectedDaHeader({
+  da,
+  regionName,
 }: {
-  title: string;
-  density: PanelDensity;
-  headerAction?: ReactNode;
-  children: ReactNode;
+  da: DaFeatureProperties;
+  regionName?: string | null;
 }) {
-  const styles = PANEL_DENSITY_STYLES[density];
+  const meta = [
+    regionName,
+    typeof da.pop_total === "number"
+      ? `Population ${formatInteger(da.pop_total)}`
+      : null,
+  ]
+    .filter((value): value is string => Boolean(value))
+    .join(" | ");
 
   return (
-    <Card className="gap-0 overflow-hidden border-border/80 bg-background/90 py-0 shadow-none">
-      <CardHeader
-        className={cn(
-          "flex flex-row items-center justify-between gap-2",
-          styles.sectionHeader
-        )}
-      >
-        <CardTitle className="text-sm">{title}</CardTitle>
-        {headerAction ? <div className="shrink-0">{headerAction}</div> : null}
-      </CardHeader>
-      <Separator />
-      <CardContent className={cn("grid text-sm", styles.sectionContent)}>
-        {children}
-      </CardContent>
-    </Card>
+    <div className="grid justify-items-center gap-0.5 px-4 text-center">
+      <h2 className="text-[15px] font-semibold leading-tight text-card-foreground">
+        Dissemination Area {da.DAUID}
+      </h2>
+      {meta ? (
+        <p className="text-[11px] leading-4 text-muted-foreground">{meta}</p>
+      ) : null}
+    </div>
   );
 }
 
@@ -310,7 +307,7 @@ function IndicatorBarRow({
 
   return (
     <div className="grid gap-1">
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 text-sm">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 text-[13px]">
         <span className="text-muted-foreground">{label}</span>
         <span className="font-medium text-card-foreground">{animatedValue}</span>
       </div>
@@ -444,7 +441,7 @@ function ComponentCardButton({
             )}
           >
             <div className="flex items-center gap-1.5">
-              <CardTitle className="text-sm leading-none">{component.title}</CardTitle>
+              <CardTitle className="text-[13px] leading-none">{component.title}</CardTitle>
               <ChevronRightIcon
                 className={cn(
                   "text-muted-foreground transition-transform",
@@ -465,11 +462,10 @@ function ComponentCardButton({
             </div>
           </div>
         </CardHeader>
-        <Separator />
         <CardContent className={cn("grid", styles.cardContent)}>
           <div
             role="progressbar"
-            aria-label={`${component.title} normalized value`}
+            aria-label={`${component.title} score bar`}
             aria-valuemin={0}
             aria-valuemax={1}
             aria-valuenow={Number(animatedScore.toFixed(3))}
@@ -485,13 +481,12 @@ function ComponentCardButton({
           </div>
           <div
             className={cn(
-              "grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 text-muted-foreground",
+              "flex items-center justify-between text-muted-foreground",
               styles.scaleRow
             )}
           >
             <span>0</span>
-            <span className="text-center">Normalized value</span>
-            <span className="text-right">1</span>
+            <span>1</span>
           </div>
         </CardContent>
       </Card>
@@ -581,7 +576,10 @@ function ComponentDetailPanel({
   );
 }
 
-export default function DaDetailsSection({ da }: DaDetailsSectionProps) {
+export default function DaDetailsSection({
+  da,
+  regionName,
+}: DaDetailsSectionProps) {
   const [openComponent, setOpenComponent] = useState<DaComponentId | null>(null);
   const [detailAnimationKey, setDetailAnimationKey] = useState(0);
   const isDesktop = useIsDesktop();
@@ -618,67 +616,53 @@ export default function DaDetailsSection({ da }: DaDetailsSectionProps) {
         data-density={density}
         className={cn("grid", styles.outerGap)}
       >
-        <Section
-          title="HVI Summary"
-          density={density}
-          headerAction={
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    className="size-5 rounded-full text-muted-foreground hover:text-foreground"
-                    aria-label="Explain HVI summary"
-                  >
-                    <CircleHelpIcon className="size-3.5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top" align="end">
-                  {summary.note}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          }
-        >
-          <div className={cn("grid", styles.summaryStack)}>
-            <div
+        <SelectedDaHeader da={da} regionName={regionName} />
+
+        <div className="px-4">
+          <div
+            className={cn(
+              "grid grid-cols-[minmax(0,1fr)_auto] items-center",
+              styles.summaryRow
+            )}
+          >
+            <div className="grid gap-0.5">
+              <div className="flex items-center gap-1.5">
+                <h3 className="text-[15px] font-semibold leading-tight text-card-foreground">
+                  Heat Vulnerability Index
+                </h3>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-xs"
+                        className="size-5 rounded-full text-muted-foreground hover:text-foreground"
+                        aria-label="Explain heat vulnerability index"
+                      >
+                        <CircleHelpIcon className="size-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" align="start">
+                      {summary.note}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                HVI (0-1)
+              </p>
+            </div>
+            <p
               className={cn(
-                "grid grid-cols-[minmax(0,1fr)_auto] items-end",
-                styles.summaryRow
+                "font-semibold leading-none text-card-foreground",
+                styles.summaryValue
               )}
             >
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                  HVI (0-1)
-                </p>
-                <p
-                  className={cn(
-                    "font-semibold leading-none text-card-foreground",
-                    styles.summaryValue
-                  )}
-                >
-                  {summary.scoreValue}
-                </p>
-              </div>
-              <div className="flex flex-nowrap justify-end gap-1">
-                <Badge variant="secondary" className="shrink-0 px-2 py-0 text-[10px]">
-                  E
-                </Badge>
-                <Badge variant="secondary" className="shrink-0 px-2 py-0 text-[10px]">
-                  S
-                </Badge>
-                <Badge variant="secondary" className="shrink-0 px-2 py-0 text-[10px]">
-                  1 - A
-                </Badge>
-              </div>
-            </div>
-            <p className={cn("text-muted-foreground", styles.summaryText)}>
-              {summary.formula}
+              {summary.scoreValue}
             </p>
           </div>
-        </Section>
+        </div>
 
         <div className={cn("grid", styles.cardsGap)}>
           {components.map((component) => (

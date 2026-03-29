@@ -8,7 +8,6 @@ import ViewOptionsSection from "./ViewOptionsSection";
 import LeftPanelBrand from "./LeftPanelBrand";
 import SelectedPlaceCard from "./SelectedPlaceCard";
 import {
-  getDaSelectedPlaceContent,
   getRegionSelectedPlaceContent,
   shouldShowDaControls,
   shouldShowInfoModeContent,
@@ -48,16 +47,11 @@ export default function LeftPanel() {
     hasActiveDa: activeDa !== null,
     hasActiveRegion: activeRegion !== null,
   });
-  const daSelectedPlaceContent = getDaSelectedPlaceContent({
-    activeDaDauid: activeDa?.DAUID ?? null,
-    activeDaRegionName,
-    activeDaPopulation: activeDa?.pop_total ?? null,
-  });
   const regionSelectedPlaceContent = getRegionSelectedPlaceContent(activeRegion);
 
   return (
     <aside className="flex h-full min-h-0 w-full flex-col border-b border-border/80 bg-card md:w-[24rem] md:flex-none md:border-r md:border-b-0">
-      <div className="border-b border-border/80 px-4 py-3">
+      <div className="border-b border-border/80 px-4 py-2">
         <LeftPanelBrand />
       </div>
 
@@ -67,7 +61,7 @@ export default function LeftPanel() {
           className="min-h-0 flex-1 overflow-auto px-5 py-4"
         >
           <div className="flex min-h-full flex-col">
-            <div className="grid gap-4">
+            <div className="grid gap-3">
               {state.mapError ? (
                 <Alert variant="destructive">
                   <AlertTitle>Map warning</AlertTitle>
@@ -89,10 +83,12 @@ export default function LeftPanel() {
                         </AlertDescription>
                       </Alert>
                     ) : null}
-                      {daSelectedPlaceContent ? (
-                        <SelectedPlaceCard content={daSelectedPlaceContent} />
+                      {activeDa ? (
+                        <DaDetailsSection
+                          da={activeDa}
+                          regionName={activeDaRegionName}
+                        />
                       ) : null}
-                      {activeDa ? <DaDetailsSection da={activeDa} /> : null}
                     </>
                   )}
                 </>
@@ -112,6 +108,12 @@ export default function LeftPanel() {
 
         <div className="shrink-0 border-t border-border/80 px-5 py-4">
           <div className="grid gap-4">
+            {shouldShowDaControls(state.zoomMode) ? (
+              <>
+                <LayerSelect />
+                <FilterMenu />
+              </>
+            ) : null}
             <ViewOptionsSection
               showPeripheralAreas={state.showPeripheralAreas}
               onShowPeripheralAreasChange={(showPeripheralAreas) =>
@@ -121,12 +123,6 @@ export default function LeftPanel() {
                 })
               }
             />
-            {shouldShowDaControls(state.zoomMode) ? (
-              <>
-                <LayerSelect />
-                <FilterMenu />
-              </>
-            ) : null}
           </div>
         </div>
       </div>
