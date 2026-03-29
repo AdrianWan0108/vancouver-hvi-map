@@ -8,6 +8,7 @@ import {
   buildDaFillOpacityExpression,
   buildFillColorExpression,
   buildFilterExpression,
+  buildLineOpacityExpression,
   buildLockedFeatureFilterExpression,
   buildRegionVisibilityFilterExpression,
   LOCKED_DA_OUTLINE_STYLE,
@@ -137,6 +138,15 @@ describe("map expressions", () => {
     expect(fillOpacity[0]).toBe("case");
     expect(fillOpacity[1]).toEqual(["has", "low_income_rate"]);
     expect(fillOpacity[3]).toBe(0);
+  });
+
+  it("increases line opacity on hover", () => {
+    expect(buildLineOpacityExpression(0.95, 0.2)).toEqual([
+      "case",
+      ["boolean", ["feature-state", "hover"], false],
+      0.95,
+      0.2,
+    ]);
   });
 
   it("builds a region filter when peripheral areas are hidden", () => {

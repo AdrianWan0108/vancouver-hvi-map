@@ -5,9 +5,12 @@ import InfoModeSection from "./InfoModeSection";
 import DaDetailsSection from "./DaDetailsSection";
 import RegionDetailsSection from "./RegionDetailsSection";
 import ViewOptionsSection from "./ViewOptionsSection";
+import LeftPanelBrand from "./LeftPanelBrand";
+import SelectedPlaceCard from "./SelectedPlaceCard";
 import {
-  getPanelHeaderContent,
+  getRegionSelectedPlaceContent,
   shouldShowDaControls,
+  shouldShowInfoModeContent,
 } from "./panelContent";
 import { useMemo } from "react";
 import {
@@ -20,7 +23,6 @@ import {
 import { useMapDispatch } from "../state/useMapDispatch";
 import { useMapHoverState } from "../state/useMapHoverState";
 import { useMapUiState } from "../state/useMapUiState";
-import { getRegionDisplayName } from "../utils/region";
 
 export default function LeftPanel() {
   const uiState = useMapUiState();
@@ -38,23 +40,19 @@ export default function LeftPanel() {
   const activeDaRegionName = selectActiveDaRegionName(state);
   const activeRegion = selectActiveRegion(state);
   const lockedDaFilteredOut = selectIsLockedDaFilteredOut(state);
-  const activeRegionName = getRegionDisplayName(activeRegion);
-  const headerContent = getPanelHeaderContent({
+  const showDaControls = shouldShowDaControls(state.zoomMode);
+  const showInfoMode = shouldShowInfoModeContent({
     zoomMode: state.zoomMode,
-    activeDaDauid: activeDa?.DAUID ?? null,
-    activeDaRegionName,
-    activeRegionName,
+    panelMode,
+    hasActiveDa: activeDa !== null,
+    hasActiveRegion: activeRegion !== null,
   });
+  const regionSelectedPlaceContent = getRegionSelectedPlaceContent(activeRegion);
 
   return (
     <aside className="flex h-full min-h-0 w-full flex-col border-b border-border/80 bg-card md:w-[24rem] md:flex-none md:border-r md:border-b-0">
-      <div className="border-b border-border/80 px-5 py-4">
-        <h1 className="text-base font-semibold">{headerContent.title}</h1>
-        {headerContent.subtitle ? (
-          <p className="mt-1 text-sm text-muted-foreground">
-            {headerContent.subtitle}
-          </p>
-        ) : null}
+      <div className="border-b border-border/80 px-4 py-2">
+        <LeftPanelBrand />
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col">
@@ -62,21 +60,22 @@ export default function LeftPanel() {
           data-hvi-panel-scroll="true"
           className="min-h-0 flex-1 overflow-auto px-5 py-4"
         >
-          <div className="grid gap-4">
-            {state.mapError ? (
-              <Alert variant="destructive">
-                <AlertTitle>Map warning</AlertTitle>
-                <AlertDescription>{state.mapError}</AlertDescription>
-              </Alert>
-            ) : null}
+          <div className="flex min-h-full flex-col">
+            <div className="grid gap-3">
+              {state.mapError ? (
+                <Alert variant="destructive">
+                  <AlertTitle>Map warning</AlertTitle>
+                  <AlertDescription>{state.mapError}</AlertDescription>
+                </Alert>
+              ) : null}
 
-            {shouldShowDaControls(state.zoomMode) ? (
-              <>
-                {panelMode === "info" || !activeDa ? (
-                  <InfoModeSection zoomMode={state.zoomMode} />
-                ) : (
-                  <>
-                    {lockedDaFilteredOut ? (
+              {showDaControls ? (
+                <>
+                  {showInfoMode ? (
+                    <InfoModeSection zoomMode={state.zoomMode} />
+                  ) : (
+                    <>
+                      {lockedDaFilteredOut ? (
                       <Alert variant="warning">
                         <AlertTitle>Filtered out</AlertTitle>
                         <AlertDescription>
@@ -84,21 +83,37 @@ export default function LeftPanel() {
                         </AlertDescription>
                       </Alert>
                     ) : null}
-                    <DaDetailsSection da={activeDa} />
-                  </>
-                )}
-              </>
-            ) : panelMode === "info" || !activeRegion ? (
-              <InfoModeSection zoomMode={state.zoomMode} />
-            ) : (
-              <RegionDetailsSection region={activeRegion} />
-            )}
-
+                      {activeDa ? (
+                        <DaDetailsSection
+                          da={activeDa}
+                          regionName={activeDaRegionName}
+                        />
+                      ) : null}
+                    </>
+                  )}
+                </>
+              ) : showInfoMode ? (
+                <InfoModeSection zoomMode={state.zoomMode} />
+              ) : (
+                <>
+                  {regionSelectedPlaceContent ? (
+                    <SelectedPlaceCard content={regionSelectedPlaceContent} />
+                  ) : null}
+                  {activeRegion ? <RegionDetailsSection region={activeRegion} /> : null}
+                </>
+              )}
+            </div>
           </div>
         </div>
 
         <div className="shrink-0 border-t border-border/80 px-5 py-4">
           <div className="grid gap-4">
+            {shouldShowDaControls(state.zoomMode) ? (
+              <>
+                <LayerSelect />
+                <FilterMenu />
+              </>
+            ) : null}
             <ViewOptionsSection
               showPeripheralAreas={state.showPeripheralAreas}
               onShowPeripheralAreasChange={(showPeripheralAreas) =>
@@ -108,12 +123,6 @@ export default function LeftPanel() {
                 })
               }
             />
-            {shouldShowDaControls(state.zoomMode) ? (
-              <>
-                <LayerSelect />
-                <FilterMenu />
-              </>
-            ) : null}
           </div>
         </div>
       </div>

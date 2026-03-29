@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
-  getPanelHeaderContent,
+  getDaSelectedPlaceContent,
+  getRegionSelectedPlaceContent,
   shouldShowDaControls,
+  shouldShowInfoModeContent,
 } from "../../src/features/hvi-map/components/panelContent";
 import { getRegionDetailsRows } from "../../src/features/hvi-map/components/regionDetails";
 
@@ -11,29 +13,77 @@ describe("panel content helpers", () => {
     expect(shouldShowDaControls("region")).toBe(false);
   });
 
-  it("builds compact panel headers for DA and region contexts", () => {
+  it("shows info-mode content only when no active detail target is present", () => {
     expect(
-      getPanelHeaderContent({
-        zoomMode: "da",
-        activeDaDauid: "59150657",
-        activeDaRegionName: "Vancouver",
-        activeRegionName: null,
+      shouldShowInfoModeContent({
+        zoomMode: "region",
+        panelMode: "info",
+        hasActiveDa: false,
+        hasActiveRegion: false,
       })
-    ).toEqual({
-      title: "DA 59150657",
-      subtitle: "Vancouver",
-    });
+    ).toBe(true);
 
     expect(
-      getPanelHeaderContent({
+      shouldShowInfoModeContent({
+        zoomMode: "da",
+        panelMode: "hover",
+        hasActiveDa: true,
+        hasActiveRegion: false,
+      })
+    ).toBe(false);
+
+    expect(
+      shouldShowInfoModeContent({
         zoomMode: "region",
-        activeDaDauid: null,
-        activeDaRegionName: null,
-        activeRegionName: "Burnaby",
+        panelMode: "locked",
+        hasActiveDa: false,
+        hasActiveRegion: true,
+      })
+    ).toBe(false);
+  });
+
+  it("builds selected-place content for active DAs", () => {
+    expect(
+      getDaSelectedPlaceContent({
+        activeDaDauid: "59150657",
+        activeDaRegionName: "Vancouver",
+        activeDaPopulation: 642,
+      })
+    ).toEqual({
+      eyebrow: "Selected dissemination area",
+      title: "Dissemination Area 59150657",
+      subtitle: "Vancouver",
+      meta: "Population: 642",
+    });
+  });
+
+  it("builds selected-place content for active regions", () => {
+    expect(
+      getRegionSelectedPlaceContent({
+        FullName: "Burnaby",
+        MunNum: 3,
+        region_pop_total: 249125,
       })
     ).toEqual({
       title: "Burnaby",
-      subtitle: null,
+      eyebrow: "Selected region",
+      subtitle: "Region 3",
+      meta: "Population: 249,125",
+    });
+  });
+
+  it("omits DA population metadata when population is unavailable", () => {
+    expect(
+      getDaSelectedPlaceContent({
+        activeDaDauid: "59150657",
+        activeDaRegionName: "Vancouver",
+        activeDaPopulation: null,
+      })
+    ).toEqual({
+      eyebrow: "Selected dissemination area",
+      title: "Dissemination Area 59150657",
+      subtitle: "Vancouver",
+      meta: null,
     });
   });
 

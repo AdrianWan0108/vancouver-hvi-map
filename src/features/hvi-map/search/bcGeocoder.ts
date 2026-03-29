@@ -1,14 +1,11 @@
+import { METRO_VANCOUVER_SEARCH_BOUNDS } from "../config/regionConfig";
 import type { AddressSearchResult, SearchBounds, SearchCenter } from "../types/search";
 
 const BC_GEOCODER_URL = "https://geocoder.api.gov.bc.ca/addresses.geojson";
 export const BC_GEOCODER_MIN_QUERY_LENGTH = 3;
 export const BC_GEOCODER_DEFAULT_LIMIT = 5;
-export const METRO_VANCOUVER_SEARCH_BBOX: SearchBounds = [
-  -123.739014,
-  49.001844,
-  -122.409668,
-  49.477048,
-];
+export const METRO_VANCOUVER_SEARCH_BBOX: SearchBounds =
+  METRO_VANCOUVER_SEARCH_BOUNDS;
 
 interface BcGeocoderFeatureCollection {
   features?: BcGeocoderFeature[];
