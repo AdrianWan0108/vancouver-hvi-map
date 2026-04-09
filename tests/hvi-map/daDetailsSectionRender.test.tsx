@@ -1,6 +1,9 @@
+// @vitest-environment jsdom
+
 import { fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import DaDetailsSection from "../../src/features/hvi-map/components/DaDetailsSection";
+import { DA_COMPONENT_DISPLAY_SCALING_NOTE } from "../../src/features/hvi-map/components/daComponentDetails";
 import type { DaFeatureProperties } from "../../src/features/hvi-map/types/data";
 
 const da: DaFeatureProperties = {
@@ -44,29 +47,29 @@ function setMatchMedia(matches: boolean) {
   });
 }
 
-afterEach(() => {
-  vi.restoreAllMocks();
-});
-
 describe("DaDetailsSection", () => {
   it("shows the HVI summary and keeps all component cards closed by default", () => {
     render(<DaDetailsSection da={da} />);
 
-    expect(screen.getByText("HVI Summary")).toBeInTheDocument();
+    expect(screen.getByText("Heat Vulnerability Index")).toBeInTheDocument();
     expect(screen.getByText("Exposure (E)")).toBeInTheDocument();
     expect(screen.getByText("Sensitivity (S)")).toBeInTheDocument();
     expect(screen.getByText("Adaptive Capacity (A)")).toBeInTheDocument();
-    expect(screen.getAllByText("Normalized value")).toHaveLength(3);
     expect(
-      screen.getByRole("progressbar", { name: /Exposure \(E\) normalized value/i })
+      screen.getByRole("progressbar", { name: /Exposure \(E\) score bar/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("progressbar", { name: /Sensitivity \(S\) score bar/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("progressbar", { name: /Adaptive Capacity \(A\) score bar/i })
     ).toBeInTheDocument();
     expect(screen.queryByText("67% Temperature")).not.toBeInTheDocument();
     expect(screen.queryByText("25% Living alone")).not.toBeInTheDocument();
     expect(screen.queryByText("25% Green")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Explain HVI summary/i })).toBeInTheDocument();
     expect(
-      screen.queryByText("Display bars use current map display ranges for visual comparison only.")
-    ).not.toBeInTheDocument();
+      screen.getByRole("button", { name: /Explain heat vulnerability index/i })
+    ).toBeInTheDocument();
     expect(
       screen.queryByText(
         "Higher Exposure and Sensitivity raise HVI, while higher Adaptive Capacity lowers it."
@@ -101,11 +104,9 @@ describe("DaDetailsSection", () => {
 
     fireEvent.focus(screen.getByRole("button", { name: /About these bars/i }));
 
-    expect(
-      screen.getByText(
-        "Mini bars use observed data ranges for comparison only. Map colors and legends use clipped display ranges for stronger contrast."
-      )
-    ).toBeInTheDocument();
+    expect(screen.getByRole("tooltip")).toHaveTextContent(
+      DA_COMPONENT_DISPLAY_SCALING_NOTE
+    );
   });
 
   it("switches the desktop flyout when different components are selected", () => {
@@ -144,14 +145,14 @@ describe("DaDetailsSection", () => {
   it("reveals the HVI summary note through the help tooltip", () => {
     render(<DaDetailsSection da={da} />);
 
-    const helpTrigger = screen.getByRole("button", { name: /Explain HVI summary/i });
+    const helpTrigger = screen.getByRole("button", {
+      name: /Explain heat vulnerability index/i,
+    });
 
     fireEvent.focus(helpTrigger);
 
-    expect(
-      screen.getByText(
-        "Higher Exposure and Sensitivity raise HVI, while higher Adaptive Capacity lowers it."
-      )
-    ).toBeInTheDocument();
+    expect(screen.getByRole("tooltip")).toHaveTextContent(
+      "Higher Exposure and Sensitivity raise HVI, while higher Adaptive Capacity lowers it."
+    );
   });
 });

@@ -6,6 +6,7 @@ import DaDetailsSection from "./DaDetailsSection";
 import RegionDetailsSection from "./RegionDetailsSection";
 import ViewOptionsSection from "./ViewOptionsSection";
 import LeftPanelBrand from "./LeftPanelBrand";
+import LeftPanelLabLogo from "./LeftPanelLabLogo";
 import SelectedPlaceCard from "./SelectedPlaceCard";
 import {
   getRegionSelectedPlaceContent,
@@ -103,6 +104,12 @@ export default function LeftPanel() {
                 </>
               )}
             </div>
+
+            {showInfoMode ? (
+              <div className="mt-auto flex justify-end pt-6">
+                <LeftPanelLabLogo />
+              </div>
+            ) : null}
           </div>
         </div>
 

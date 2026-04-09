@@ -1,6 +1,8 @@
+// @vitest-environment jsdom
+
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { MapStateContext } from "../../src/features/hvi-map/state/context";
+import { MapUiStateContext } from "../../src/features/hvi-map/state/context";
 import { createInitialMapUiState } from "../../src/features/hvi-map/state/reducer";
 import MapLegendOverlay from "../../src/features/hvi-map/components/MapLegendOverlay";
 
@@ -24,9 +26,9 @@ function renderWithState(zoomMode: "da" | "region" = "da") {
   };
 
   return render(
-    <MapStateContext.Provider value={{ state, dispatch: () => undefined }}>
+    <MapUiStateContext.Provider value={state}>
       <MapLegendOverlay />
-    </MapStateContext.Provider>
+    </MapUiStateContext.Provider>
   );
 }
 

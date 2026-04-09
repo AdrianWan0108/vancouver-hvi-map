@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import { useEffect, type Dispatch } from "react";
 import { act, render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
