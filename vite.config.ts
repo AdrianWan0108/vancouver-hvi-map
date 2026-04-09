@@ -15,9 +15,4 @@ export default defineConfig({
     },
   },
   base: "/vancouver-hvi-map/",
-  test: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
 });
